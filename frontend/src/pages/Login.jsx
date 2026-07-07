@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { auth } from "../services/firebase";
 
@@ -9,6 +10,7 @@ import {
 
 function Login(){
 
+const navigate = useNavigate();
 const [email,setEmail] = useState("");
 const [password,setPassword] = useState("");
 
@@ -46,7 +48,7 @@ email,
 password
 );
 
-alert("Login Successful");
+navigate("/dashboard");
 
 }
 
