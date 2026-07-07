@@ -1,3 +1,4 @@
+import CreateAgreement from "./pages/CreateAgreement";
 import React from "react";
 import ReactDOM from "react-dom/client";
 
@@ -33,6 +34,10 @@ path="/dashboard"
 element={<Dashboard/>}
 />
 
+<Route
+path="/create"
+element={<CreateAgreement/>}
+/>
 
 </Routes>
 

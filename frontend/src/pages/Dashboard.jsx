@@ -1,4 +1,6 @@
+import { useNavigate } from "react-router-dom";
 function Dashboard(){
+    const navigate = useNavigate();
 
 return (
 
@@ -16,8 +18,12 @@ Create and manage secure digital agreements
 
 <div className="mt-10">
 
-<button className="bg-blue-600 px-6 py-3 rounded-lg">
+<button
+onClick={()=>navigate("/create")}
 
+className="bg-blue-600 px-6 py-3 rounded-lg"
+
+>
 + Create Agreement
 
 </button>
