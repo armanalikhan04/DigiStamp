@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { db } from "../services/firebase";
+import { generateAgreement } from "../services/gemini";
 
 import {
  collection,
@@ -19,6 +20,7 @@ terms:""
 
 });
 
+const [aiText,setAiText] = useState("");
 
 const handleChange=(e)=>{
 
@@ -32,6 +34,25 @@ setForm({
 
 };
 
+    const handleGenerateAI = async()=>{
+
+try{
+
+const result = await generateAgreement(form);
+
+setAiText(result);
+
+alert("AI Agreement Generated");
+
+}
+
+catch(error){
+
+alert(error.message);
+
+}
+
+};
 
 const saveAgreement = async()=>{
 
@@ -126,6 +147,39 @@ className="p-3 text-black block mb-4 w-96"
 
 />
 
+        <button
+
+onClick={handleGenerateAI}
+
+className="bg-green-600 px-6 py-3 rounded mr-3"
+
+>
+
+Generate Using AI 🤖
+
+</button>
+
+        {
+aiText &&
+
+<div className="mt-6 bg-gray-800 p-5 rounded">
+
+<h2 className="text-xl mb-3">
+
+AI Generated Agreement
+
+</h2>
+
+
+<p className="whitespace-pre-line">
+
+{aiText}
+
+</p>
+
+</div>
+
+}
 
 <button
 
