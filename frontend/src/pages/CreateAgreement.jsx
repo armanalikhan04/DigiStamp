@@ -1,3 +1,4 @@
+import jsPDF from "jspdf";
 import { useState } from "react";
 import { db } from "../services/firebase";
 import { generateAgreement } from "../services/gemini";
@@ -21,6 +22,7 @@ terms:""
 });
 
 const [aiText,setAiText] = useState("");
+const [isSaved,setIsSaved] = useState(false);
 const generateAgreementId = () => {
 
 return "DS-" + Date.now();
@@ -48,6 +50,7 @@ setLoading(true);
 const result = await generateAgreement(form);
 
 setAiText(result);
+setIsSaved(false);
 
 alert("AI Agreement Generated");
 
@@ -103,7 +106,7 @@ createdAt:new Date()
 
 );
 
-
+setIsSaved(true);
 alert("Agreement Saved Successfully");
 
 
@@ -117,7 +120,66 @@ alert(error.message);
 
 };
 
+const generatePDF = () => {
 
+
+const doc = new jsPDF();
+
+
+doc.setFontSize(20);
+
+
+doc.text(
+"DigiStamp Agreement",
+20,
+20
+);
+
+
+doc.setFontSize(12);
+
+
+doc.text(
+`Party A: ${form.partyA}`,
+20,
+40
+);
+
+
+doc.text(
+`Party B: ${form.partyB}`,
+20,
+50
+);
+
+
+doc.text(
+`Amount: ${form.amount}`,
+20,
+60
+);
+
+
+
+const agreementLines = doc.splitTextToSize(
+aiText,
+170
+);
+
+
+doc.text(
+agreementLines,
+20,
+80
+);
+
+
+doc.save(
+"DigiStamp_Agreement.pdf"
+);
+
+
+};
 
 return(
 
@@ -229,6 +291,24 @@ className="bg-blue-600 px-6 py-3 rounded"
 Save Agreement
 
 </button>
+
+{
+
+isSaved &&
+
+<button
+
+onClick={generatePDF}
+
+className="bg-purple-600 px-6 py-3 rounded ml-3"
+
+>
+
+Download PDF 📄
+
+</button>
+
+}
 
 
 </div>
