@@ -21,7 +21,7 @@ terms:""
 });
 
 const [aiText,setAiText] = useState("");
-
+const [loading,setLoading] = useState(false);
 const handleChange=(e)=>{
 
 setForm({
@@ -34,9 +34,11 @@ setForm({
 
 };
 
-    const handleGenerateAI = async()=>{
+   const handleGenerateAI = async()=>{
 
 try{
+
+setLoading(true);
 
 const result = await generateAgreement(form);
 
@@ -48,7 +50,13 @@ alert("AI Agreement Generated");
 
 catch(error){
 
-alert(error.message);
+alert("AI limit reached. Try again after some time.");
+
+}
+
+finally{
+
+setLoading(false);
 
 }
 
@@ -155,7 +163,7 @@ className="bg-green-600 px-6 py-3 rounded mr-3"
 
 >
 
-Generate Using AI 🤖
+{loading ? "Generating..." : "Generate Using AI 🤖"}
 
 </button>
 

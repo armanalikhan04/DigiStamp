@@ -11,43 +11,30 @@ export async function generateAgreement(details) {
 
   const model = genAI.getGenerativeModel({
 
-model:"gemini-2.0-flash"
+model:"gemini-2.5-flash"
 
 });
 
 
   const prompt = `
 
-Create a professional digital agreement.
+Write a short professional digital agreement.
 
-Agreement Details:
+Party A: ${details.partyA}
 
-Party A:
-${details.partyA}
+Party B: ${details.partyB}
 
-Party B:
-${details.partyB}
+Amount: ${details.amount}
 
-Amount:
-${details.amount}
+Terms: ${details.terms}
 
-Terms:
-${details.terms}
-
-
-Generate a proper agreement containing:
-
-1. Agreement introduction
-
-2. Responsibilities of both parties
-
-3. Payment conditions
-
-4. Important terms
-
-5. Closing confirmation
+Include:
+- Agreement summary
+- Payment terms
+- Responsibilities
 
 `;
+
 
 
   const result = await model.generateContent(prompt);
