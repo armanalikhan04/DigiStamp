@@ -21,6 +21,11 @@ terms:""
 });
 
 const [aiText,setAiText] = useState("");
+const generateAgreementId = () => {
+
+return "DS-" + Date.now();
+
+};
 const [loading,setLoading] = useState(false);
 const handleChange=(e)=>{
 
@@ -66,16 +71,40 @@ const saveAgreement = async()=>{
 
 try{
 
+
+const agreementId = generateAgreementId();
+
+
 await addDoc(
+
 collection(db,"agreements"),
+
 {
-...form,
+
+agreementId: agreementId,
+
+partyA: form.partyA,
+
+partyB: form.partyB,
+
+amount: form.amount,
+
+userTerms: form.terms,
+
+aiAgreement: aiText,
+
+status:"created",
+
+securityStatus:"pending",
+
 createdAt:new Date()
+
 }
+
 );
 
 
-alert("Agreement Created Successfully");
+alert("Agreement Saved Successfully");
 
 
 }
