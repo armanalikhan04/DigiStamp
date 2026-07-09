@@ -40,6 +40,18 @@ Verify Agreement 🔍
 
 </button>
 
+<button
+
+onClick={()=>navigate("/profile")}
+
+className="bg-purple-600 px-6 py-3 rounded-lg"
+
+>
+
+Complete Verification 🔐
+
+</button>
+
 </div>
 
 
