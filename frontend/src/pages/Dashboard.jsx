@@ -28,6 +28,17 @@ className="bg-blue-600 px-6 py-3 rounded-lg"
 
 </button>
 
+<button
+
+onClick={()=>navigate("/verify")}
+
+className="bg-green-600 px-6 py-3 rounded-lg ml-3"
+
+>
+
+Verify Agreement 🔍
+
+</button>
 
 </div>
 

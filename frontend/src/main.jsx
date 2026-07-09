@@ -1,3 +1,4 @@
+import VerifyAgreement from "./pages/VerifyAgreement";
 import CreateAgreement from "./pages/CreateAgreement";
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -37,6 +38,14 @@ element={<Dashboard/>}
 <Route
 path="/create"
 element={<CreateAgreement/>}
+/>
+
+<Route
+
+path="/verify"
+
+element={<VerifyAgreement/>}
+
 />
 
 </Routes>
