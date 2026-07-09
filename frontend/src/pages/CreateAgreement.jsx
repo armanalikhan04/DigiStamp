@@ -1,3 +1,4 @@
+import { generateHash } from "../services/security";
 import jsPDF from "jspdf";
 import { useState } from "react";
 import { db } from "../services/firebase";
@@ -76,6 +77,9 @@ try{
 
 
 const agreementId = generateAgreementId();
+const securityHash = generateHash(
+aiText
+);
 
 
 await addDoc(
@@ -95,6 +99,8 @@ amount: form.amount,
 userTerms: form.terms,
 
 aiAgreement: aiText,
+
+securityHash: securityHash,
 
 status:"created",
 
@@ -267,6 +273,7 @@ aiText &&
 
 AI Generated Agreement
 
+
 </h2>
 
 
@@ -275,6 +282,29 @@ AI Generated Agreement
 {aiText}
 
 </p>
+
+</div>
+
+}
+
+{
+isSaved &&
+
+<div className="mt-5 bg-gray-800 p-4 rounded">
+
+<h2 className="text-xl">
+
+Security Hash 🔐
+
+</h2>
+
+
+<p className="break-all">
+
+Document secured with SHA-256
+
+</p>
+
 
 </div>
 
