@@ -1,4 +1,4 @@
-import Profile from "./pages/Profile";
+import Verification from "./pages/Verification";
 import VerifyAgreement from "./pages/VerifyAgreement";
 import CreateAgreement from "./pages/CreateAgreement";
 import React from "react";
@@ -49,13 +49,7 @@ element={<VerifyAgreement/>}
 
 />
 
-<Route
-
-path="/profile"
-
-element={<Profile/>}
-
-/>
+<Route path="/verification" element={<Verification />} />
 
 </Routes>
 

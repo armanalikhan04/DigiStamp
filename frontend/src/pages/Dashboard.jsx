@@ -1,9 +1,10 @@
+import Layout from "../components/layout/Layout";
 import { useNavigate } from "react-router-dom";
 function Dashboard(){
     const navigate = useNavigate();
 
 return (
-
+<Layout>
 <div className="min-h-screen bg-gray-900 text-white p-10">
 
 <h1 className="text-4xl font-bold">
@@ -72,6 +73,7 @@ No agreements created yet.
 
 
 </div>
+</Layout>
 
 )
 
