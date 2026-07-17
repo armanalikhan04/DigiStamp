@@ -19,14 +19,8 @@ Create and manage secure digital agreements
 
 <div className="mt-10">
 
-<button
-onClick={()=>navigate("/create")}
-
-className="bg-blue-600 px-6 py-3 rounded-lg"
-
->
-+ Create Agreement
-
+<button onClick={() => navigate("/create-deal")}>
+  + Create Deal
 </button>
 
 <button

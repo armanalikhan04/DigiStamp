@@ -1,4 +1,5 @@
 import { generateHash } from "../services/security";
+import { useLocation } from "react-router-dom";
 import jsPDF from "jspdf";
 import { useState } from "react";
 import { db } from "../services/firebase";
@@ -12,13 +13,19 @@ import {
 
 function CreateAgreement(){
 
+        const location = useLocation();
 
-const [form,setForm] = useState({
+const deal = location.state;
 
-partyA:"",
-partyB:"",
-amount:"",
-terms:""
+const [form, setForm] = useState({
+
+partyA: deal?.partyAName || "",
+
+partyB: deal?.partyBName || "",
+
+amount: deal?.amount || "",
+
+terms: deal?.description || ""
 
 });
 
@@ -201,55 +208,40 @@ Create Agreement 📄
 
 
 <input
-
 name="partyA"
-
 placeholder="Party A Name"
-
+value={form.partyA}
 onChange={handleChange}
-
 className="p-3 text-black block mb-4 w-96"
-
 />
 
 
 <input
-
 name="partyB"
-
 placeholder="Party B Name"
-
+value={form.partyB}
 onChange={handleChange}
-
 className="p-3 text-black block mb-4 w-96"
-
 />
 
 
 
 <input
-
 name="amount"
-
 placeholder="Amount"
-
+value={form.amount}
 onChange={handleChange}
-
 className="p-3 text-black block mb-4 w-96"
-
 />
 
 
 <textarea
-
 name="terms"
-
 placeholder="Agreement Terms"
-
+value={form.terms}
 onChange={handleChange}
-
 className="p-3 text-black block mb-4 w-96"
-
+rows="5"
 />
 
         <button
