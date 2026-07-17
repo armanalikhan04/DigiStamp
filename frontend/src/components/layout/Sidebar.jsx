@@ -11,49 +11,55 @@ function Sidebar() {
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-slate-900 text-white p-6 shadow-lg">
+    <aside className="hidden min-h-[calc(100vh-76px)] w-72 shrink-0 border-r border-slate-200 bg-white p-5 shadow-sm lg:block">
 
-      {/* Logo */}
-      <h2 className="text-3xl font-bold text-blue-400 mb-10">
-        DigiStamp
-      </h2>
+      <div className="mb-8 rounded-2xl bg-[#1E3A8A] p-5 text-white shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">
+          Legal-Tech Suite
+        </p>
+        <h2 className="mt-2 text-2xl font-bold">
+          DigiStamp
+        </h2>
+        <p className="mt-2 text-sm leading-5 text-blue-100">
+          Agreements, identity checks, verification, and document security.
+        </p>
+      </div>
 
-      {/* Navigation */}
-      <nav className="flex flex-col gap-3">
+      <nav className="flex flex-col gap-2">
 
         <Link
           to="/dashboard"
-          className="p-3 rounded-lg hover:bg-slate-700 transition"
+          className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-[#1E3A8A]"
         >
-          🏠 Dashboard
+          Dashboard
         </Link>
 
         <Link
           to="/create-deal"
-          className="p-3 rounded-lg hover:bg-slate-700 transition"
+          className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-[#1E3A8A]"
         >
-          📄 Create Deal
+          Create Deal
         </Link>
 
         <Link
           to="/verify"
-          className="p-3 rounded-lg hover:bg-slate-700 transition"
+          className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-[#1E3A8A]"
         >
-          🔍 Verify Agreement
+          Verify Agreement
         </Link>
 
         <Link
           to="/verification"
-          className="p-3 rounded-lg hover:bg-slate-700 transition"
+          className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-[#1E3A8A]"
         >
-          🛡 Identity Verification
+          Identity Verification
         </Link>
 
         <button
           onClick={handleLogout}
-          className="text-left p-3 rounded-lg hover:bg-red-600 transition"
+          className="mt-4 rounded-xl px-4 py-3 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50"
         >
-          🚪 Logout
+          Logout
         </button>
 
       </nav>

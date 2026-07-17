@@ -2,6 +2,13 @@ import { useState } from "react";
 import { db } from "../services/firebase";
 import { uploadImage } from "../services/cloudinary";
 import { doc, setDoc } from "firebase/firestore";
+import Layout from "../components/layout/Layout";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import InputField from "../components/ui/InputField";
+import ProgressSteps from "../components/ui/ProgressSteps";
+import SectionHeader from "../components/ui/SectionHeader";
+import StatusBadge from "../components/ui/StatusBadge";
 
 function Verification() {
   const [profile, setProfile] = useState({
@@ -67,94 +74,119 @@ function Verification() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex justify-center items-center p-8">
-      <div className="bg-white shadow-2xl rounded-2xl w-full max-w-2xl p-8">
+    <Layout>
+    <div className="page-transition">
+      <SectionHeader
+        eyebrow="Identity Verification"
+        title="Complete your verification"
+        description="Upload identity details and photos before creating high-trust digital agreements."
+      >
+        <div className="mt-4 flex flex-wrap gap-2">
+          <StatusBadge variant="primary">Cloudinary upload</StatusBadge>
+          <StatusBadge variant="success">Firestore profile</StatusBadge>
+        </div>
+      </SectionHeader>
 
-        <h1 className="text-3xl font-bold text-center text-blue-600">
-          Identity Verification 🛡
-        </h1>
+      <ProgressSteps
+        current={1}
+        steps={["Login", "Identity", "Deal", "Agreement"]}
+      />
 
-        <p className="text-center text-gray-500 mt-2">
-          Complete your identity verification before creating digital agreements.
-        </p>
+      <Card className="mt-8 max-w-3xl p-6 sm:p-8">
+        <div className="mb-6 border-b border-slate-200 pb-5">
+          <h2 className="text-xl font-bold text-slate-950">
+            Government ID and face verification
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Keep the details accurate. These records support agreement trust and identity checks.
+          </p>
+        </div>
 
         <div className="mt-8 space-y-5">
 
-          <input
+          <InputField
             type="text"
             name="name"
+            label="Full name"
             placeholder="Full Name"
             value={profile.name}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3"
           />
 
-          <input
+          <InputField
             type="text"
             name="phone"
+            label="Phone number"
             placeholder="Phone Number"
             value={profile.phone}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3"
           />
 
-          <select
+          <InputField
+            as="select"
             name="idType"
+            label="Government ID type"
             value={profile.idType}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3"
           >
             <option value="">Select Government ID</option>
             <option>Aadhaar Card</option>
             <option>PAN Card</option>
             <option>Driving License</option>
             <option>Passport</option>
-          </select>
+          </InputField>
 
-          <input
+          <InputField
             type="text"
             name="idNumber"
+            label="Government ID number"
             placeholder="Government ID Number"
             value={profile.idNumber}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3"
           />
 
-          <div>
-            <label className="font-semibold block mb-2">
-              Upload Government ID 📄
+          <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5">
+            <label className="block text-sm font-semibold text-slate-700">
+              Upload Government ID
             </label>
+            <p className="mt-1 text-xs text-slate-500">Image files only.</p>
 
             <input
               type="file"
               accept="image/*"
               onChange={(e) => setIdImage(e.target.files[0])}
+              className="mt-4 block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-[#1E3A8A] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
             />
           </div>
 
-          <div>
-            <label className="font-semibold block mb-2">
-              Upload Face Photo 📷
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5">
+            <label className="block text-sm font-semibold text-slate-700">
+              Upload Face Photo
             </label>
+            <p className="mt-1 text-xs text-slate-500">Use a clear front-facing image.</p>
 
             <input
               type="file"
               accept="image/*"
               onChange={(e) => setFaceImage(e.target.files[0])}
+              className="mt-4 block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-[#1E3A8A] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
             />
           </div>
+          </div>
 
-          <button
+          <Button
             onClick={saveProfile}
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition"
+            className="w-full"
           >
             {loading ? "Verifying..." : "Verify Identity"}
-          </button>
+          </Button>
 
         </div>
-      </div>
+      </Card>
     </div>
+    </Layout>
   );
 }
 

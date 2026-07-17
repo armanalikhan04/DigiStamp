@@ -4,6 +4,13 @@ import jsPDF from "jspdf";
 import { useState } from "react";
 import { db } from "../services/firebase";
 import { generateAgreement } from "../services/gemini";
+import Layout from "../components/layout/Layout";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import InputField from "../components/ui/InputField";
+import ProgressSteps from "../components/ui/ProgressSteps";
+import SectionHeader from "../components/ui/SectionHeader";
+import StatusBadge from "../components/ui/StatusBadge";
 
 import {
  collection,
@@ -196,144 +203,179 @@ doc.save(
 
 return(
 
-<div className="min-h-screen bg-gray-900 text-white p-10">
+<Layout>
+<div className="page-transition">
 
+<SectionHeader
+eyebrow="AI Agreement"
+title="Generate and review agreement"
+description="Review deal details, generate an agreement draft, save it securely, and download the PDF."
+>
+<div className="mt-4 flex flex-wrap gap-2">
+<StatusBadge variant="primary">Gemini AI drafting</StatusBadge>
+<StatusBadge variant="success">SHA-256 hash on save</StatusBadge>
+</div>
+</SectionHeader>
 
-<h1 className="text-3xl font-bold mb-8">
+<ProgressSteps
+current={3}
+steps={["Login", "Identity", "Deal", "Agreement"]}
+/>
 
-Create Agreement 📄
+<div className="mt-8 grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+<Card className="p-6">
+<h2 className="text-xl font-bold text-slate-950">
+Agreement inputs
+</h2>
+<p className="mt-2 text-sm leading-6 text-slate-500">
+These values are sent to the existing AI agreement generator.
+</p>
 
-</h1>
-
-
-
-<input
+<div className="mt-6 space-y-4">
+<InputField
 name="partyA"
+label="Party A"
 placeholder="Party A Name"
 value={form.partyA}
 onChange={handleChange}
-className="p-3 text-black block mb-4 w-96"
 />
 
-
-<input
+<InputField
 name="partyB"
+label="Party B"
 placeholder="Party B Name"
 value={form.partyB}
 onChange={handleChange}
-className="p-3 text-black block mb-4 w-96"
 />
 
-
-
-<input
+<InputField
 name="amount"
+label="Amount"
 placeholder="Amount"
 value={form.amount}
 onChange={handleChange}
-className="p-3 text-black block mb-4 w-96"
 />
 
-
-<textarea
+<InputField
+as="textarea"
 name="terms"
+label="Agreement Terms"
 placeholder="Agreement Terms"
 value={form.terms}
 onChange={handleChange}
-className="p-3 text-black block mb-4 w-96"
 rows="5"
 />
+</div>
 
-        <button
+<Button
 
 onClick={handleGenerateAI}
 
-className="bg-green-600 px-6 py-3 rounded mr-3"
+variant="success"
+className="mt-6 w-full"
 
 >
 
-{loading ? "Generating..." : "Generate Using AI 🤖"}
+{loading ? "Generating..." : "Generate Using AI"}
 
-</button>
+</Button>
+</Card>
+
+<div className="space-y-6">
 
         {
 aiText &&
 
-<div className="mt-6 bg-gray-800 p-5 rounded">
+<Card className="p-6">
 
-<h2 className="text-xl mb-3">
+<div className="mb-4 flex items-center justify-between gap-4">
+<h2 className="text-xl font-bold text-slate-950">
 
 AI Generated Agreement
 
 
 </h2>
+<StatusBadge variant="primary">Review draft</StatusBadge>
+</div>
 
 
-<p className="whitespace-pre-line">
+<p className="whitespace-pre-line rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700">
 
 {aiText}
 
 </p>
 
-</div>
+</Card>
 
 }
 
 {
 isSaved &&
 
-<div className="mt-5 bg-gray-800 p-4 rounded">
+<Card className="border-emerald-100 bg-emerald-50 p-5">
 
-<h2 className="text-xl">
+<h2 className="text-lg font-bold text-emerald-800">
 
-Security Hash 🔐
+Security Hash
 
 </h2>
 
 
-<p className="break-all">
+<p className="mt-2 break-all text-sm text-emerald-700">
 
 Document secured with SHA-256
 
 </p>
 
 
-</div>
+</Card>
 
 }
 
-<button
+<Card className="p-6">
+<h2 className="text-xl font-bold text-slate-950">
+Finalize agreement
+</h2>
+<p className="mt-2 text-sm leading-6 text-slate-500">
+Save the generated agreement to Firestore before downloading the PDF.
+</p>
+
+<div className="mt-5 flex flex-wrap gap-3">
+<Button
 
 onClick={saveAgreement}
-
-className="bg-blue-600 px-6 py-3 rounded"
 
 >
 
 Save Agreement
 
-</button>
+</Button>
 
 {
 
 isSaved &&
 
-<button
+<Button
 
 onClick={generatePDF}
 
-className="bg-purple-600 px-6 py-3 rounded ml-3"
+variant="secondary"
 
 >
 
-Download PDF 📄
+Download PDF
 
-</button>
+</Button>
 
 }
+</div>
+</Card>
+</div>
+</div>
 
 
 </div>
+</Layout>
 
 
 )

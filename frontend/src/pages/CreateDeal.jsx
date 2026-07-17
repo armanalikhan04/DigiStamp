@@ -1,5 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Layout from "../components/layout/Layout";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import InputField from "../components/ui/InputField";
+import ProgressSteps from "../components/ui/ProgressSteps";
+import SectionHeader from "../components/ui/SectionHeader";
+import StatusBadge from "../components/ui/StatusBadge";
 
 function CreateDeal() {
   const navigate = useNavigate();
@@ -40,134 +47,141 @@ function CreateDeal() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex justify-center p-10">
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl">
+    <Layout>
+    <div className="page-transition">
+      <SectionHeader
+        eyebrow="Deal Intake"
+        title="Create new deal"
+        description="Capture the commercial details needed to generate a secure AI-assisted agreement."
+      >
+        <div className="mt-4 flex flex-wrap gap-2">
+          <StatusBadge variant="primary">AI drafting ready</StatusBadge>
+          <StatusBadge variant="success">Secure workflow</StatusBadge>
+        </div>
+      </SectionHeader>
 
-        {/* Header */}
-        <div className="bg-[#1E3A8A] text-white rounded-t-2xl p-8">
-          <h1 className="text-4xl font-bold">
-            Create New Deal 🤝
-          </h1>
+      <ProgressSteps
+        current={2}
+        steps={["Login", "Identity", "Deal", "Agreement"]}
+      />
 
-          <p className="mt-2 text-blue-100">
-            Start a secure and legally verifiable digital agreement.
+      <Card className="mt-8 overflow-hidden">
+        <div className="border-b border-slate-200 bg-white px-6 py-5 sm:px-8">
+          <h2 className="text-xl font-bold text-slate-950">
+            Deal information
+          </h2>
+          <p className="mt-2 text-sm text-slate-500">
+            This information is passed into the agreement generator.
           </p>
         </div>
 
-        <div className="p-10 space-y-8">
-
-          {/* Deal Type */}
+        <div className="space-y-8 p-6 sm:p-8">
 
           <div>
-            <label className="block font-semibold mb-2">
-              Deal Type
-            </label>
-
-            <select
+            <InputField
+              as="select"
               name="dealType"
+              label="Deal Type"
               value={deal.dealType}
               onChange={handleChange}
-              className="w-full border rounded-lg p-3"
             >
               <option>Loan</option>
               <option>Freelance Work</option>
               <option>Rent Agreement</option>
               <option>Business Partnership</option>
               <option>Service Agreement</option>
-            </select>
+            </InputField>
           </div>
 
-          {/* Party Information */}
+          <div className="grid gap-6 lg:grid-cols-2">
 
-          <div className="grid grid-cols-2 gap-8">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
 
-            <div>
-
-              <h2 className="text-xl font-bold text-[#1E3A8A] mb-4">
+              <h3 className="mb-4 text-lg font-bold text-[#1E3A8A]">
                 Party A
-              </h2>
+              </h3>
 
-              <input
+              <InputField
                 name="partyAName"
+                label="Full name"
                 placeholder="Full Name"
                 value={deal.partyAName}
                 onChange={handleChange}
-                className="w-full border rounded-lg p-3 mb-4"
+                className="mb-4"
               />
 
-              <input
+              <InputField
                 name="partyAEmail"
+                label="Email address"
                 placeholder="Email Address"
                 value={deal.partyAEmail}
                 onChange={handleChange}
-                className="w-full border rounded-lg p-3"
               />
 
             </div>
 
-            <div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
 
-              <h2 className="text-xl font-bold text-[#1E3A8A] mb-4">
+              <h3 className="mb-4 text-lg font-bold text-[#1E3A8A]">
                 Party B
-              </h2>
+              </h3>
 
-              <input
+              <InputField
                 name="partyBName"
+                label="Full name"
                 placeholder="Full Name"
                 value={deal.partyBName}
                 onChange={handleChange}
-                className="w-full border rounded-lg p-3 mb-4"
+                className="mb-4"
               />
 
-              <input
+              <InputField
                 name="partyBEmail"
+                label="Email address"
                 placeholder="Email Address"
                 value={deal.partyBEmail}
                 onChange={handleChange}
-                className="w-full border rounded-lg p-3"
               />
 
             </div>
 
           </div>
 
-          {/* Deal Details */}
-
           <div>
 
-            <h2 className="text-xl font-bold text-[#1E3A8A] mb-4">
+            <h3 className="mb-4 text-lg font-bold text-[#1E3A8A]">
               Deal Details
-            </h2>
+            </h3>
 
-            <input
+            <InputField
               type="number"
               name="amount"
+              label="Amount"
               placeholder="Amount (₹)"
               value={deal.amount}
               onChange={handleChange}
-              className="w-full border rounded-lg p-3 mb-4"
+              className="mb-4"
             />
 
-            <textarea
+            <InputField
+              as="textarea"
               rows="6"
               name="description"
+              label="Agreement description"
               placeholder="Describe the agreement..."
               value={deal.description}
               onChange={handleChange}
-              className="w-full border rounded-lg p-3"
             />
 
           </div>
 
-          {/* Security Notice */}
-
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
 
             <h3 className="font-bold text-[#1E3A8A]">
-              🔐 DigiStamp Security
+              DigiStamp Security
             </h3>
 
-            <p className="text-gray-700 mt-2">
+            <p className="mt-2 text-sm leading-6 text-slate-600">
               Every agreement is protected using SHA-256 hashing,
               AI-generated legal drafting, secure cloud storage,
               and future certificate verification.
@@ -175,18 +189,17 @@ function CreateDeal() {
 
           </div>
 
-          {/* Button */}
-
-          <button
+          <Button
             onClick={continueToAgreement}
-            className="w-full bg-[#1E3A8A] hover:bg-blue-900 text-white py-4 rounded-xl text-lg font-semibold transition"
+            className="w-full py-4 text-base"
           >
-            Continue → Generate AI Agreement
-          </button>
+            Continue to AI Agreement
+          </Button>
 
         </div>
-      </div>
+      </Card>
     </div>
+    </Layout>
   );
 }
 
