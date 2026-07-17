@@ -1,6 +1,15 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/useAuth";
 
 function Sidebar() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
+
   return (
     <aside className="w-64 min-h-screen bg-slate-900 text-white p-6 shadow-lg">
 
@@ -41,6 +50,7 @@ function Sidebar() {
         </Link>
 
         <button
+          onClick={handleLogout}
           className="text-left p-3 rounded-lg hover:bg-red-600 transition"
         >
           🚪 Logout

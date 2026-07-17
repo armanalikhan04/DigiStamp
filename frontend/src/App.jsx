@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CreateDeal from "./pages/CreateDeal";
@@ -10,13 +11,62 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/create-deal" element={<CreateDeal />} />
-      <Route path="/create" element={<CreateAgreement />} />
-      <Route path="/create-agreement" element={<CreateAgreement />} />
-      <Route path="/verify" element={<VerifyAgreement />} />
-      <Route path="/verification" element={<Verification />} />
-      <Route path="/profile" element={<Verification />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-deal"
+        element={
+          <ProtectedRoute>
+            <CreateDeal />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create"
+        element={
+          <ProtectedRoute>
+            <CreateAgreement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-agreement"
+        element={
+          <ProtectedRoute>
+            <CreateAgreement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/verify"
+        element={
+          <ProtectedRoute>
+            <VerifyAgreement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/verification"
+        element={
+          <ProtectedRoute>
+            <Verification />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Verification />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
