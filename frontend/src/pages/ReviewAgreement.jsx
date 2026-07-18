@@ -31,11 +31,13 @@ function ReviewAgreement() {
   };
 
   const continueToSignature = () => {
-    navigate("/create-agreement", {
+    navigate("/signature", {
       state: {
         ...reviewData,
+        agreementId: reviewData.agreementId || `DRAFT-${Date.now()}`,
         reviewed: true,
-        agreementStatus: "Reviewed",
+        signerRole: "Party A",
+        agreementStatus: "Ready for Party A Signature",
       },
     });
   };
@@ -56,7 +58,7 @@ function ReviewAgreement() {
 
         <ProgressSteps
           current={2}
-          steps={["Create Deal", "✓ AI Generated", "► Review", "Signature", "Save"]}
+          steps={["Create Deal", "AI Generated", "► Review", "Party A", "Party B", "Final Review"]}
         />
 
         <div className="mt-8 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">

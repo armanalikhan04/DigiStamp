@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import CreateDeal from "./pages/CreateDeal";
 import CreateAgreement from "./pages/CreateAgreement";
 import ReviewAgreement from "./pages/ReviewAgreement";
+import SignaturePage from "./pages/SignaturePage";
 import VerifyAgreement from "./pages/VerifyAgreement";
 import Verification from "./pages/Verification";
 
@@ -49,6 +50,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ReviewAgreement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/signature"
+        element={
+          <ProtectedRoute>
+            <SignaturePage />
           </ProtectedRoute>
         }
       />

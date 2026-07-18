@@ -39,6 +39,7 @@ terms: deal?.terms || deal?.description || ""
 
 const [aiText,setAiText] = useState(deal?.aiText || "");
 const isReviewed = Boolean(deal?.reviewed);
+const isFinalReview = Boolean(deal?.signatures?.["Party A"] && deal?.signatures?.["Party B"]);
 const [isSaved,setIsSaved] = useState(false);
 const generateAgreementId = () => {
 
@@ -220,19 +221,20 @@ return(
 <div className="page-transition">
 
 <SectionHeader
-eyebrow="AI Agreement"
-title="Generate and review agreement"
-description="Review deal details, generate an agreement draft, save it securely, and download the PDF."
+eyebrow={isFinalReview ? "Final Review" : "AI Agreement"}
+title={isFinalReview ? "Final review and save" : "Generate and review agreement"}
+description={isFinalReview ? "Both parties have signed. Review the final agreement state before saving." : "Review deal details, generate an agreement draft, save it securely, and download the PDF."}
 >
 <div className="mt-4 flex flex-wrap gap-2">
 <StatusBadge variant="primary">Gemini AI drafting</StatusBadge>
 <StatusBadge variant="success">SHA-256 hash on save</StatusBadge>
+{isFinalReview && <StatusBadge variant="success">Party A and Party B signed</StatusBadge>}
 </div>
 </SectionHeader>
 
 <ProgressSteps
-current={isReviewed ? 3 : 1}
-steps={["Create Deal", "✓ AI Generated", "Review", "Signature", "Save"]}
+current={isFinalReview ? 5 : isReviewed ? 3 : 1}
+steps={["Create Deal", "AI Generated", "Review", "Party A", "Party B", "Final Review"]}
 />
 
 <div className="mt-8 grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
@@ -355,6 +357,12 @@ Finalize agreement
 <p className="mt-2 text-sm leading-6 text-slate-500">
 Review is complete. Save the generated agreement to Firestore before downloading the PDF.
 </p>
+
+{isFinalReview && (
+<div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
+Party A and Party B signatures are captured in React state for this session.
+</div>
+)}
 
 <div className="mt-5 flex flex-wrap gap-3">
 <Button
