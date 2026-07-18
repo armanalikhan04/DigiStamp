@@ -17,7 +17,7 @@ function Button({
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 ${variants[variant]} ${className}`}
+      className={`inline-flex max-w-full items-center justify-center gap-2 whitespace-normal rounded-xl px-5 py-3 text-center text-sm font-semibold leading-5 shadow-sm transition duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 ${variants[variant]} ${className}`}
       {...props}
     >
       {children}
