@@ -1,5 +1,5 @@
 import { generateHash } from "../services/security";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import { useState } from "react";
 import { db } from "../services/firebase";
@@ -21,22 +21,24 @@ import {
 function CreateAgreement(){
 
         const location = useLocation();
+        const navigate = useNavigate();
 
 const deal = location.state;
 
 const [form, setForm] = useState({
 
-partyA: deal?.partyAName || "",
+partyA: deal?.partyA || deal?.partyAName || "",
 
-partyB: deal?.partyBName || "",
+partyB: deal?.partyB || deal?.partyBName || "",
 
 amount: deal?.amount || "",
 
-terms: deal?.description || ""
+terms: deal?.terms || deal?.description || ""
 
 });
 
-const [aiText,setAiText] = useState("");
+const [aiText,setAiText] = useState(deal?.aiText || "");
+const isReviewed = Boolean(deal?.reviewed);
 const [isSaved,setIsSaved] = useState(false);
 const generateAgreementId = () => {
 
@@ -67,7 +69,18 @@ const result = await generateAgreement(form);
 setAiText(result);
 setIsSaved(false);
 
-alert("AI Agreement Generated");
+navigate("/review-agreement", {
+state: {
+...deal,
+partyA: form.partyA,
+partyB: form.partyB,
+amount: form.amount,
+terms: form.terms,
+aiText: result,
+createdAt: new Date().toISOString(),
+agreementStatus: "AI Generated"
+}
+});
 
 }
 
@@ -218,8 +231,8 @@ description="Review deal details, generate an agreement draft, save it securely,
 </SectionHeader>
 
 <ProgressSteps
-current={3}
-steps={["Login", "Identity", "Deal", "Agreement"]}
+current={isReviewed ? 3 : 1}
+steps={["Create Deal", "✓ AI Generated", "Review", "Signature", "Save"]}
 />
 
 <div className="mt-8 grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
@@ -332,12 +345,15 @@ Document secured with SHA-256
 
 }
 
+{
+isReviewed &&
+
 <Card className="p-6">
 <h2 className="text-xl font-bold text-slate-950">
 Finalize agreement
 </h2>
 <p className="mt-2 text-sm leading-6 text-slate-500">
-Save the generated agreement to Firestore before downloading the PDF.
+Review is complete. Save the generated agreement to Firestore before downloading the PDF.
 </p>
 
 <div className="mt-5 flex flex-wrap gap-3">
@@ -370,6 +386,40 @@ Download PDF
 }
 </div>
 </Card>
+
+}
+
+{
+aiText && !isReviewed &&
+
+<Card className="border-amber-100 bg-amber-50 p-6">
+<h2 className="text-xl font-bold text-amber-800">
+Review required before saving
+</h2>
+<p className="mt-2 text-sm leading-6 text-amber-700">
+This generated agreement must be reviewed before the save action is available.
+</p>
+<Button
+onClick={() => navigate("/review-agreement", {
+state: {
+...deal,
+partyA: form.partyA,
+partyB: form.partyB,
+amount: form.amount,
+terms: form.terms,
+aiText,
+createdAt: deal?.createdAt || new Date().toISOString(),
+agreementStatus: "AI Generated"
+}
+})}
+variant="warning"
+className="mt-5"
+>
+Review Agreement
+</Button>
+</Card>
+
+}
 </div>
 </div>
 

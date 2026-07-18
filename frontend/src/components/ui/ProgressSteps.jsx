@@ -1,6 +1,9 @@
 function ProgressSteps({ steps = [], current = 0 }) {
   return (
-    <div className="grid gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 md:grid-cols-4">
+    <div
+      className="grid gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 md:[grid-template-columns:repeat(var(--step-count),minmax(0,1fr))]"
+      style={{ "--step-count": steps.length }}
+    >
       {steps.map((step, index) => {
         const isActive = index === current;
         const isDone = index < current;
