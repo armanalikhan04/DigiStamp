@@ -1,61 +1,73 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
-import { getAgreementById } from "../services/agreementService";
-import { getCertificateById } from "../services/certificateService";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import SectionHeader from "../components/ui/SectionHeader";
 import StatusBadge from "../components/ui/StatusBadge";
+import { useAgreement } from "../hooks/useAgreement";
+import { useCertificate } from "../hooks/useCertificate";
 import {
   formatCertificateDate,
   getAgreementSha256,
+  getVerificationStatusCardClass,
+  getVerificationStatusTextClass,
+  getVerificationStatusTitle,
+  getVerificationStatusVariant,
 } from "../utils/certificate";
 
 function VerifyCertificatePage() {
   const { certificateId } = useParams();
   const navigate = useNavigate();
-  const [certificate, setCertificate] = useState(null);
-  const [agreement, setAgreement] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [result, setResult] = useState("not-found");
   const [verifiedAt, setVerifiedAt] = useState("");
+  const {
+    certificate,
+    loading: certificateLoading,
+    error: certificateError,
+  } = useCertificate(certificateId);
+  const {
+    agreement,
+    loading: agreementLoading,
+    error: agreementError,
+  } = useAgreement(certificate?.agreementId);
+  const agreementPending = Boolean(certificate?.agreementId) && !agreement && !agreementError;
+  const loading = certificateLoading || agreementLoading || agreementPending;
 
   useEffect(() => {
-    const verifyCertificate = async () => {
-      setVerifiedAt(new Date().toLocaleString());
-
-      try {
-        const certificateData = await getCertificateById(certificateId);
-
-        if (!certificateData) {
-          setResult("not-found");
-          return;
-        }
-
-        setCertificate(certificateData);
-
-        const agreementData = await getAgreementById(certificateData.agreementId);
-
-        if (!agreementData) {
-          setResult("tampered");
-          return;
-        }
-
-        setAgreement(agreementData);
-
-        const agreementHash = getAgreementSha256(agreementData);
-        setResult(certificateData.sha256 === agreementHash ? "verified" : "tampered");
-      } catch (error) {
-        console.error(error);
-        setResult("not-found");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    verifyCertificate();
+    setVerifiedAt(new Date().toLocaleString());
   }, [certificateId]);
+
+  useEffect(() => {
+    if (certificateLoading) {
+      return;
+    }
+
+    if (certificateError || !certificate) {
+      setResult("not-found");
+      return;
+    }
+
+    if (agreementLoading || agreementPending) {
+      return;
+    }
+
+    if (agreementError || !agreement) {
+      setResult("tampered");
+      return;
+    }
+
+    const agreementHash = getAgreementSha256(agreement);
+    setResult(certificate.sha256 === agreementHash ? "verified" : "tampered");
+  }, [
+    agreement,
+    agreementError,
+    agreementLoading,
+    agreementPending,
+    certificate,
+    certificateError,
+    certificateLoading,
+  ]);
 
   const downloadCertificatePDF = () => {
     if (!certificate) {
@@ -85,26 +97,10 @@ function VerifyCertificatePage() {
     pdf.save(`${certificate.certificateId}_Verification.pdf`);
   };
 
-  const statusCardClass =
-    result === "verified"
-      ? "border-emerald-100 bg-emerald-50"
-      : result === "tampered"
-        ? "border-red-100 bg-red-50"
-        : "border-slate-200 bg-slate-50";
-
-  const statusTextClass =
-    result === "verified"
-      ? "text-emerald-700"
-      : result === "tampered"
-        ? "text-red-700"
-        : "text-slate-700";
-
-  const statusTitle =
-    result === "verified"
-      ? "✓ VERIFIED"
-      : result === "tampered"
-        ? "Certificate Tampered"
-        : "Certificate Not Found";
+  const statusCardClass = getVerificationStatusCardClass(result);
+  const statusTextClass = getVerificationStatusTextClass(result);
+  const statusTitle = getVerificationStatusTitle(result);
+  const statusVariant = getVerificationStatusVariant(result);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 sm:px-6 lg:px-8">
@@ -121,7 +117,7 @@ function VerifyCertificatePage() {
         >
           <div className="mt-4 flex flex-wrap gap-2">
             <StatusBadge variant="primary">DigiStamp</StatusBadge>
-            <StatusBadge variant={result === "verified" ? "success" : result === "tampered" ? "danger" : "default"}>
+            <StatusBadge variant={statusVariant}>
               {loading ? "Checking" : result}
             </StatusBadge>
           </div>
@@ -137,7 +133,7 @@ function VerifyCertificatePage() {
                 Verification Timestamp: {verifiedAt || "Checking..."}
               </p>
             </div>
-            <StatusBadge variant={result === "verified" ? "success" : result === "tampered" ? "danger" : "default"}>
+            <StatusBadge variant={statusVariant}>
               {result === "verified" ? "Verified" : result === "tampered" ? "Tampered" : "Not Found"}
             </StatusBadge>
           </div>

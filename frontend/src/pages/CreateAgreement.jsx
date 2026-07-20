@@ -13,21 +13,19 @@ import ProgressSteps from "../components/ui/ProgressSteps";
 import SectionHeader from "../components/ui/SectionHeader";
 import StatusBadge from "../components/ui/StatusBadge";
 import {
+  buildSignedAgreementDocument,
+  generateAgreementId,
+} from "../utils/agreement";
+import {
   buildVerificationUrl,
   generateCertificateId,
 } from "../utils/certificate";
+import {
+  formatSignedAt,
+  getSignatureRecord,
+} from "../utils/signature";
 
 import { Timestamp } from "firebase/firestore";
-
-const getSignatureRecord = (signatures, role) => signatures?.[role] || null;
-
-const formatSignedAt = (signedAt) => {
-  if (!signedAt) {
-    return "Pending";
-  }
-
-  return new Date(signedAt).toLocaleString();
-};
 
 const toFirestoreSignature = (signatureRecord) => {
   if (!signatureRecord?.signature) {
@@ -98,11 +96,6 @@ const isFinalReview = Boolean(deal?.signatures?.["Party A"] && deal?.signatures?
 const partyASignature = getSignatureRecord(deal?.signatures, "Party A");
 const partyBSignature = getSignatureRecord(deal?.signatures, "Party B");
 const [isSaved,setIsSaved] = useState(false);
-const generateAgreementId = () => {
-
-return "DS-" + Date.now();
-
-};
 const [loading,setLoading] = useState(false);
 const handleChange=(e)=>{
 
@@ -166,24 +159,11 @@ const signatures = {
 partyA: toFirestoreSignature(partyASignature),
 partyB: toFirestoreSignature(partyBSignature)
 };
-const finalSignedDocument = JSON.stringify({
-agreementText: aiText,
-partyA: form.partyA,
-partyB: form.partyB,
-amount: form.amount,
-terms: form.terms,
-signatures: {
-partyA: {
-method: partyASignature?.signature?.method || "",
-value: partyASignature?.signature?.value || "",
-signedAt: partyASignature?.signedAt || ""
-},
-partyB: {
-method: partyBSignature?.signature?.method || "",
-value: partyBSignature?.signature?.value || "",
-signedAt: partyBSignature?.signedAt || ""
-}
-}
+const finalSignedDocument = buildSignedAgreementDocument({
+aiText,
+form,
+partyASignature,
+partyBSignature
 });
 const securityHash = generateHash(
 finalSignedDocument

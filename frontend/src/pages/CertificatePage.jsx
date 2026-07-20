@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
 import { QRCodeCanvas } from "qrcode.react";
-import { getCertificateById } from "../services/certificateService";
 import Layout from "../components/layout/Layout";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import SectionHeader from "../components/ui/SectionHeader";
 import StatusBadge from "../components/ui/StatusBadge";
+import { useCertificate } from "../hooks/useCertificate";
 import {
   buildVerificationUrl,
   formatCertificateDate,
@@ -16,36 +16,12 @@ import {
 function CertificatePage() {
   const { certificateId } = useParams();
   const navigate = useNavigate();
-  const [certificate, setCertificate] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { certificate, loading, error } = useCertificate(certificateId);
   const [showAgreement, setShowAgreement] = useState(false);
   const qrRef = useRef(null);
   const certificateUrl = certificate
     ? buildVerificationUrl(window.location.origin, certificate.certificateId)
     : "";
-
-  useEffect(() => {
-    const loadCertificate = async () => {
-      try {
-        const certificateData = await getCertificateById(certificateId);
-
-        if (!certificateData) {
-          setError("Certificate not found.");
-          return;
-        }
-
-        setCertificate(certificateData);
-      } catch (loadError) {
-        console.error(loadError);
-        setError("Unable to load certificate.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCertificate();
-  }, [certificateId]);
 
   const verifyCertificate = async () => {
     navigate(`/verify/${certificateId}`);
