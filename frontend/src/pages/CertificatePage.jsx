@@ -9,18 +9,10 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import SectionHeader from "../components/ui/SectionHeader";
 import StatusBadge from "../components/ui/StatusBadge";
-
-const formatIssuedAt = (issuedAt) => {
-  if (!issuedAt) {
-    return "Not available";
-  }
-
-  if (issuedAt.toDate) {
-    return issuedAt.toDate().toLocaleString();
-  }
-
-  return new Date(issuedAt).toLocaleString();
-};
+import {
+  buildVerificationUrl,
+  formatCertificateDate,
+} from "../utils/certificate";
 
 function CertificatePage() {
   const { certificateId } = useParams();
@@ -30,6 +22,9 @@ function CertificatePage() {
   const [error, setError] = useState("");
   const [showAgreement, setShowAgreement] = useState(false);
   const qrRef = useRef(null);
+  const certificateUrl = certificate
+    ? buildVerificationUrl(window.location.origin, certificate.certificateId)
+    : "";
 
   useEffect(() => {
     const loadCertificate = async () => {
@@ -73,7 +68,7 @@ function CertificatePage() {
     pdf.text(`Party A: ${certificate.partyA}`, 20, 64);
     pdf.text(`Party B: ${certificate.partyB}`, 20, 74);
     pdf.text(`Agreement Type: ${certificate.agreementType}`, 20, 84);
-    pdf.text(`Issue Date: ${formatIssuedAt(certificate.issuedAt)}`, 20, 94);
+    pdf.text(`Issue Date: ${formatCertificateDate(certificate.issuedAt)}`, 20, 94);
     pdf.text(`Status: ${certificate.status}`, 20, 104);
 
     pdf.setFontSize(14);
@@ -219,7 +214,7 @@ function CertificatePage() {
                   Issue Date
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-950">
-                  {formatIssuedAt(certificate.issuedAt)}
+                  {formatCertificateDate(certificate.issuedAt)}
                 </p>
               </div>
             </div>
@@ -245,7 +240,7 @@ function CertificatePage() {
             <div className="mt-6 grid gap-6 lg:grid-cols-[auto_1fr] lg:items-center">
               <div ref={qrRef} className="mx-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:mx-0">
                 <QRCodeCanvas
-                  value={`${window.location.origin}/certificate/${certificate.certificateId}`}
+                  value={certificateUrl}
                   size={160}
                   level="H"
                   includeMargin

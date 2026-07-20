@@ -14,18 +14,10 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import SectionHeader from "../components/ui/SectionHeader";
 import StatusBadge from "../components/ui/StatusBadge";
-
-const formatIssuedAt = (issuedAt) => {
-  if (!issuedAt) {
-    return "Not available";
-  }
-
-  if (issuedAt.toDate) {
-    return issuedAt.toDate().toLocaleString();
-  }
-
-  return new Date(issuedAt).toLocaleString();
-};
+import {
+  formatCertificateDate,
+  getAgreementSha256,
+} from "../utils/certificate";
 
 function VerifyCertificatePage() {
   const { certificateId } = useParams();
@@ -65,7 +57,7 @@ function VerifyCertificatePage() {
         const agreementData = agreementSnapshot.docs[0].data();
         setAgreement(agreementData);
 
-        const agreementHash = agreementData.sha256 || agreementData.securityHash;
+        const agreementHash = getAgreementSha256(agreementData);
         setResult(certificateData.sha256 === agreementHash ? "verified" : "tampered");
       } catch (error) {
         console.error(error);
@@ -94,7 +86,7 @@ function VerifyCertificatePage() {
     pdf.text(`Party A: ${certificate.partyA}`, 20, 64);
     pdf.text(`Party B: ${certificate.partyB}`, 20, 74);
     pdf.text(`Agreement Type: ${certificate.agreementType}`, 20, 84);
-    pdf.text(`Issue Date: ${formatIssuedAt(certificate.issuedAt)}`, 20, 94);
+    pdf.text(`Issue Date: ${formatCertificateDate(certificate.issuedAt)}`, 20, 94);
     pdf.text(`Certificate Status: ${result === "verified" ? "Verified" : "Tampered"}`, 20, 104);
     pdf.text(`Verification Timestamp: ${verifiedAt}`, 20, 114);
 
@@ -209,7 +201,7 @@ function VerifyCertificatePage() {
                 ["Party A", certificate.partyA],
                 ["Party B", certificate.partyB],
                 ["Agreement Type", certificate.agreementType],
-                ["Issue Date", formatIssuedAt(certificate.issuedAt)],
+                ["Issue Date", formatCertificateDate(certificate.issuedAt)],
                 ["Status", certificate.status],
                 ["Platform", "DigiStamp"],
               ].map(([label, value]) => (
@@ -239,7 +231,7 @@ function VerifyCertificatePage() {
                   Agreement Hash
                 </p>
                 <p className="mt-2 break-all text-sm leading-6 text-slate-700">
-                  {agreement.sha256 || agreement.securityHash}
+                  {getAgreementSha256(agreement)}
                 </p>
               </div>
             )}

@@ -11,6 +11,10 @@ import InputField from "../components/ui/InputField";
 import ProgressSteps from "../components/ui/ProgressSteps";
 import SectionHeader from "../components/ui/SectionHeader";
 import StatusBadge from "../components/ui/StatusBadge";
+import {
+  buildVerificationUrl,
+  generateCertificateId,
+} from "../utils/certificate";
 
 import {
  collection,
@@ -40,16 +44,6 @@ const toFirestoreSignature = (signatureRecord) => {
     value: signatureRecord.signature.value,
     signedAt: Timestamp.fromDate(new Date(signatureRecord.signedAt)),
   };
-};
-
-const generateCertificateId = () => {
-  const year = new Date().getFullYear();
-  const randomPart = Array.from(crypto.getRandomValues(new Uint8Array(4)))
-    .map((value) => value.toString(16).padStart(2, "0"))
-    .join("")
-    .toUpperCase();
-
-  return `DS-${year}-${randomPart}`;
 };
 
 const renderSignaturePreview = (signatureRecord) => {
@@ -235,7 +229,7 @@ signatures: signatures
 
 const certificateId = generateCertificateId();
 const issuedAt = new Date();
-const verificationUrl = `${window.location.origin}/certificate/${certificateId}`;
+const verificationUrl = buildVerificationUrl(window.location.origin, certificateId);
 
 await setDoc(
 
