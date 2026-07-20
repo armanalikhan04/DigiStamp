@@ -8,6 +8,7 @@ import CertificatePage from "./pages/CertificatePage";
 import ReviewAgreement from "./pages/ReviewAgreement";
 import SignaturePage from "./pages/SignaturePage";
 import VerifyAgreement from "./pages/VerifyAgreement";
+import VerifyCertificatePage from "./pages/VerifyCertificatePage";
 import Verification from "./pages/Verification";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Login />} />
       <Route path="/certificate/:certificateId" element={<CertificatePage />} />
+      <Route path="/verify/:certificateId" element={<VerifyCertificatePage />} />
       <Route
         path="/dashboard"
         element={

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
 import { doc, getDoc } from "firebase/firestore";
+import { QRCodeCanvas } from "qrcode.react";
 import { db } from "../services/firebase";
 import Layout from "../components/layout/Layout";
 import Button from "../components/ui/Button";
@@ -28,7 +29,7 @@ function CertificatePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAgreement, setShowAgreement] = useState(false);
-  const [verificationMessage, setVerificationMessage] = useState("");
+  const qrRef = useRef(null);
 
   useEffect(() => {
     const loadCertificate = async () => {
@@ -53,14 +54,7 @@ function CertificatePage() {
   }, [certificateId]);
 
   const verifyCertificate = async () => {
-    const snapshot = await getDoc(doc(db, "certificates", certificateId));
-
-    if (snapshot.exists()) {
-      setVerificationMessage("Certificate verified successfully.");
-      return;
-    }
-
-    setVerificationMessage("Certificate could not be verified.");
+    navigate(`/verify/${certificateId}`);
   };
 
   const downloadCertificatePDF = () => {
@@ -91,6 +85,14 @@ function CertificatePage() {
     pdf.text("Verification URL", 20, 164);
     pdf.setFontSize(10);
     pdf.text(pdf.splitTextToSize(certificate.verificationUrl, 170), 20, 174);
+
+    const qrCanvas = qrRef.current?.querySelector("canvas");
+
+    if (qrCanvas) {
+      pdf.setFontSize(14);
+      pdf.text("Certificate QR Code", 20, 194);
+      pdf.addImage(qrCanvas.toDataURL("image/png"), "PNG", 20, 202, 42, 42);
+    }
 
     pdf.save(`${certificate.certificateId}_Certificate.pdf`);
   };
@@ -140,7 +142,7 @@ function CertificatePage() {
               <Button onClick={() => setShowAgreement(!showAgreement)} variant="secondary">
                 View Agreement
               </Button>
-              <Button onClick={verifyCertificate} variant="success">
+            <Button onClick={verifyCertificate} variant="success">
                 Verify Certificate
               </Button>
             </>
@@ -240,11 +242,24 @@ function CertificatePage() {
               </p>
             </div>
 
-            {verificationMessage && (
-              <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
-                {verificationMessage}
+            <div className="mt-6 grid gap-6 lg:grid-cols-[auto_1fr] lg:items-center">
+              <div ref={qrRef} className="mx-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:mx-0">
+                <QRCodeCanvas
+                  value={`${window.location.origin}/certificate/${certificate.certificateId}`}
+                  size={160}
+                  level="H"
+                  includeMargin
+                />
               </div>
-            )}
+              <div className="rounded-2xl bg-slate-50 p-5">
+                <p className="text-sm font-bold text-slate-950">
+                  Scan to view certificate
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  The QR code opens the public certificate URL for this DigiStamp record.
+                </p>
+              </div>
+            </div>
 
             {showAgreement && (
               <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
