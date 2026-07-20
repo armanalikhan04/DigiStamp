@@ -190,7 +190,7 @@ function SignaturePage() {
               </h2>
               <p className="mt-2 text-sm leading-6 text-emerald-700">
                 This signature is held temporarily in React state for the current workflow.
-                It is not saved to Firestore until a later feature explicitly adds persistence.
+                It is saved to Firestore only when the final signed agreement is saved.
               </p>
             </Card>
           </div>

@@ -14,8 +14,62 @@ import StatusBadge from "../components/ui/StatusBadge";
 
 import {
  collection,
- addDoc
+ addDoc,
+ Timestamp
 } from "firebase/firestore";
+
+const getSignatureRecord = (signatures, role) => signatures?.[role] || null;
+
+const formatSignedAt = (signedAt) => {
+  if (!signedAt) {
+    return "Pending";
+  }
+
+  return new Date(signedAt).toLocaleString();
+};
+
+const toFirestoreSignature = (signatureRecord) => {
+  if (!signatureRecord?.signature) {
+    return null;
+  }
+
+  return {
+    method: signatureRecord.signature.method,
+    value: signatureRecord.signature.value,
+    signedAt: Timestamp.fromDate(new Date(signatureRecord.signedAt)),
+  };
+};
+
+const renderSignaturePreview = (signatureRecord) => {
+  if (!signatureRecord?.signature) {
+    return (
+      <p className="text-sm font-semibold text-slate-500">
+        Signature not captured
+      </p>
+    );
+  }
+
+  const { method, value, fontFamily } = signatureRecord.signature;
+
+  if (method === "type") {
+    return (
+      <p
+        className="break-words text-3xl text-[#1E3A8A] sm:text-4xl"
+        style={{ fontFamily }}
+      >
+        {value}
+      </p>
+    );
+  }
+
+  return (
+    <img
+      src={value}
+      alt={`${signatureRecord.signerRole} signature preview`}
+      className="max-h-28 max-w-full object-contain"
+    />
+  );
+};
 
 
 function CreateAgreement(){
@@ -40,6 +94,8 @@ terms: deal?.terms || deal?.description || ""
 const [aiText,setAiText] = useState(deal?.aiText || "");
 const isReviewed = Boolean(deal?.reviewed);
 const isFinalReview = Boolean(deal?.signatures?.["Party A"] && deal?.signatures?.["Party B"]);
+const partyASignature = getSignatureRecord(deal?.signatures, "Party A");
+const partyBSignature = getSignatureRecord(deal?.signatures, "Party B");
 const [isSaved,setIsSaved] = useState(false);
 const generateAgreementId = () => {
 
@@ -105,8 +161,31 @@ try{
 
 
 const agreementId = generateAgreementId();
+const signatures = {
+partyA: toFirestoreSignature(partyASignature),
+partyB: toFirestoreSignature(partyBSignature)
+};
+const finalSignedDocument = JSON.stringify({
+agreementText: aiText,
+partyA: form.partyA,
+partyB: form.partyB,
+amount: form.amount,
+terms: form.terms,
+signatures: {
+partyA: {
+method: partyASignature?.signature?.method || "",
+value: partyASignature?.signature?.value || "",
+signedAt: partyASignature?.signedAt || ""
+},
+partyB: {
+method: partyBSignature?.signature?.method || "",
+value: partyBSignature?.signature?.value || "",
+signedAt: partyBSignature?.signedAt || ""
+}
+}
+});
 const securityHash = generateHash(
-aiText
+finalSignedDocument
 );
 
 
@@ -134,7 +213,9 @@ status:"created",
 
 securityStatus:"pending",
 
-createdAt:new Date()
+createdAt:new Date(),
+
+signatures: signatures
 
 }
 
@@ -207,6 +288,78 @@ agreementLines,
 80
 );
 
+let signatureY = 90 + agreementLines.length * 7;
+
+if (signatureY > 230) {
+doc.addPage();
+signatureY = 20;
+}
+
+doc.setFontSize(16);
+doc.text(
+"Digital Signatures",
+20,
+signatureY
+);
+
+const addSignatureToPDF = (label, signatureRecord, yPosition) => {
+doc.setFontSize(12);
+doc.text(
+label,
+20,
+yPosition
+);
+
+if (signatureRecord?.signature?.method === "type") {
+doc.setFontSize(18);
+doc.text(
+signatureRecord.signature.value,
+20,
+yPosition + 12
+);
+} else if (signatureRecord?.signature?.value) {
+try {
+const imageFormat = signatureRecord.signature.value.startsWith("data:image/jpeg")
+? "JPEG"
+: "PNG";
+doc.addImage(
+signatureRecord.signature.value,
+imageFormat,
+20,
+yPosition + 6,
+55,
+22
+);
+} catch {
+doc.text(
+"Signature image attached",
+20,
+yPosition + 12
+);
+}
+} else {
+doc.text(
+"Signature not captured",
+20,
+yPosition + 12
+);
+}
+
+doc.setFontSize(10);
+doc.text(
+`Method: ${signatureRecord?.signature?.method || "Pending"}`,
+20,
+yPosition + 36
+);
+doc.text(
+`Timestamp: ${formatSignedAt(signatureRecord?.signedAt)}`,
+20,
+yPosition + 44
+);
+};
+
+addSignatureToPDF("Party A", partyASignature, signatureY + 14);
+addSignatureToPDF("Party B", partyBSignature, signatureY + 72);
 
 doc.save(
 "DigiStamp_Agreement.pdf"
@@ -350,6 +503,95 @@ Document secured with SHA-256
 {
 isReviewed &&
 
+<>
+
+{
+isFinalReview &&
+
+<Card className="p-6">
+<div className="mb-5 flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+<div>
+<h2 className="text-xl font-bold text-slate-950">
+Final Review
+</h2>
+<p className="mt-1 text-sm text-slate-500">
+Confirm the signed agreement details before saving to Firestore.
+</p>
+</div>
+<StatusBadge variant="success">Ready to Save</StatusBadge>
+</div>
+
+<div className="grid gap-4 sm:grid-cols-3">
+<div className="rounded-2xl bg-slate-50 p-4">
+<p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+Party A
+</p>
+<p className="mt-1 break-words text-sm font-semibold text-slate-900">
+{form.partyA || "Not provided"}
+</p>
+</div>
+<div className="rounded-2xl bg-slate-50 p-4">
+<p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+Party B
+</p>
+<p className="mt-1 break-words text-sm font-semibold text-slate-900">
+{form.partyB || "Not provided"}
+</p>
+</div>
+<div className="rounded-2xl bg-slate-50 p-4">
+<p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+Amount
+</p>
+<p className="mt-1 break-words text-sm font-semibold text-slate-900">
+{form.amount || "Not provided"}
+</p>
+</div>
+</div>
+
+<div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+<div>
+<p className="text-sm font-bold text-[#1E3A8A]">
+SHA-256 Status
+</p>
+<p className="mt-1 text-sm leading-6 text-slate-600">
+Hash will be generated from the assembled signed agreement when saved.
+</p>
+</div>
+<StatusBadge variant="primary">Pending Save</StatusBadge>
+</div>
+</div>
+
+<div className="mt-6 grid gap-4 lg:grid-cols-2">
+{[
+{ label: "Party A", record: partyASignature },
+{ label: "Party B", record: partyBSignature }
+].map(({ label, record }) => (
+<div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
+<div className="mb-4 flex items-center justify-between gap-3">
+<h3 className="text-base font-bold text-slate-950">
+{label} Signature
+</h3>
+<StatusBadge variant="success">Signed</StatusBadge>
+</div>
+<div className="flex min-h-32 items-center justify-center rounded-2xl bg-slate-50 p-4">
+{renderSignaturePreview(record)}
+</div>
+<div className="mt-4 space-y-2 text-sm">
+<p className="text-slate-600">
+<span className="font-semibold text-slate-900">Method:</span> {record?.signature?.method || "Pending"}
+</p>
+<p className="text-slate-600">
+<span className="font-semibold text-slate-900">Timestamp:</span> {formatSignedAt(record?.signedAt)}
+</p>
+</div>
+</div>
+))}
+</div>
+</Card>
+
+}
+
 <Card className="p-6">
 <h2 className="text-xl font-bold text-slate-950">
 Finalize agreement
@@ -394,6 +636,8 @@ Download PDF
 }
 </div>
 </Card>
+
+</>
 
 }
 
