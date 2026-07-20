@@ -15,6 +15,8 @@ import StatusBadge from "../components/ui/StatusBadge";
 import {
  collection,
  addDoc,
+ doc,
+ setDoc,
  Timestamp
 } from "firebase/firestore";
 
@@ -38,6 +40,16 @@ const toFirestoreSignature = (signatureRecord) => {
     value: signatureRecord.signature.value,
     signedAt: Timestamp.fromDate(new Date(signatureRecord.signedAt)),
   };
+};
+
+const generateCertificateId = () => {
+  const year = new Date().getFullYear();
+  const randomPart = Array.from(crypto.getRandomValues(new Uint8Array(4)))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
+
+  return `DS-${year}-${randomPart}`;
 };
 
 const renderSignaturePreview = (signatureRecord) => {
@@ -221,8 +233,41 @@ signatures: signatures
 
 );
 
+const certificateId = generateCertificateId();
+const issuedAt = new Date();
+const verificationUrl = `${window.location.origin}/certificate/${certificateId}`;
+
+await setDoc(
+
+doc(db,"certificates",certificateId),
+
+{
+
+certificateId: certificateId,
+
+agreementId: agreementId,
+
+partyA: form.partyA,
+
+partyB: form.partyB,
+
+agreementType: deal?.dealType || "Digital Agreement",
+
+issuedAt: Timestamp.fromDate(issuedAt),
+
+sha256: securityHash,
+
+status:"Verified",
+
+verificationUrl: verificationUrl
+
+}
+
+);
+
 setIsSaved(true);
 alert("Agreement Saved Successfully");
+navigate(`/certificate/${certificateId}`);
 
 
 }

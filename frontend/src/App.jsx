@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CreateDeal from "./pages/CreateDeal";
 import CreateAgreement from "./pages/CreateAgreement";
+import CertificatePage from "./pages/CertificatePage";
 import ReviewAgreement from "./pages/ReviewAgreement";
 import SignaturePage from "./pages/SignaturePage";
 import VerifyAgreement from "./pages/VerifyAgreement";
@@ -13,6 +14,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
+      <Route path="/certificate/:certificateId" element={<CertificatePage />} />
       <Route
         path="/dashboard"
         element={
