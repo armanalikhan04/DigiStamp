@@ -2,7 +2,8 @@ import { generateHash } from "../services/security";
 import { useLocation, useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import { useState } from "react";
-import { db } from "../services/firebase";
+import { createAgreement } from "../services/agreementService";
+import { createCertificate } from "../services/certificateService";
 import { generateAgreement } from "../services/gemini";
 import Layout from "../components/layout/Layout";
 import Button from "../components/ui/Button";
@@ -16,13 +17,7 @@ import {
   generateCertificateId,
 } from "../utils/certificate";
 
-import {
- collection,
- addDoc,
- doc,
- setDoc,
- Timestamp
-} from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 
 const getSignatureRecord = (signatures, role) => signatures?.[role] || null;
 
@@ -195,11 +190,7 @@ finalSignedDocument
 );
 
 
-await addDoc(
-
-collection(db,"agreements"),
-
-{
+await createAgreement({
 
 agreementId: agreementId,
 
@@ -223,19 +214,13 @@ createdAt:new Date(),
 
 signatures: signatures
 
-}
-
-);
+});
 
 const certificateId = generateCertificateId();
 const issuedAt = new Date();
 const verificationUrl = buildVerificationUrl(window.location.origin, certificateId);
 
-await setDoc(
-
-doc(db,"certificates",certificateId),
-
-{
+await createCertificate(certificateId, {
 
 certificateId: certificateId,
 
@@ -255,9 +240,7 @@ status:"Verified",
 
 verificationUrl: verificationUrl
 
-}
-
-);
+});
 
 setIsSaved(true);
 alert("Agreement Saved Successfully");

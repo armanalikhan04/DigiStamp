@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
-import { doc, getDoc } from "firebase/firestore";
 import { QRCodeCanvas } from "qrcode.react";
-import { db } from "../services/firebase";
+import { getCertificateById } from "../services/certificateService";
 import Layout from "../components/layout/Layout";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -29,14 +28,14 @@ function CertificatePage() {
   useEffect(() => {
     const loadCertificate = async () => {
       try {
-        const snapshot = await getDoc(doc(db, "certificates", certificateId));
+        const certificateData = await getCertificateById(certificateId);
 
-        if (!snapshot.exists()) {
+        if (!certificateData) {
           setError("Certificate not found.");
           return;
         }
 
-        setCertificate(snapshot.data());
+        setCertificate(certificateData);
       } catch (loadError) {
         console.error(loadError);
         setError("Unable to load certificate.");

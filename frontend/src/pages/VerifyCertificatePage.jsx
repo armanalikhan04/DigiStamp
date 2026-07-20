@@ -1,15 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import jsPDF from "jspdf";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-import { db } from "../services/firebase";
+import { getAgreementById } from "../services/agreementService";
+import { getCertificateById } from "../services/certificateService";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import SectionHeader from "../components/ui/SectionHeader";
@@ -33,28 +26,22 @@ function VerifyCertificatePage() {
       setVerifiedAt(new Date().toLocaleString());
 
       try {
-        const certificateSnapshot = await getDoc(doc(db, "certificates", certificateId));
+        const certificateData = await getCertificateById(certificateId);
 
-        if (!certificateSnapshot.exists()) {
+        if (!certificateData) {
           setResult("not-found");
           return;
         }
 
-        const certificateData = certificateSnapshot.data();
         setCertificate(certificateData);
 
-        const agreementQuery = query(
-          collection(db, "agreements"),
-          where("agreementId", "==", certificateData.agreementId),
-        );
-        const agreementSnapshot = await getDocs(agreementQuery);
+        const agreementData = await getAgreementById(certificateData.agreementId);
 
-        if (agreementSnapshot.empty) {
+        if (!agreementData) {
           setResult("tampered");
           return;
         }
 
-        const agreementData = agreementSnapshot.docs[0].data();
         setAgreement(agreementData);
 
         const agreementHash = getAgreementSha256(agreementData);
