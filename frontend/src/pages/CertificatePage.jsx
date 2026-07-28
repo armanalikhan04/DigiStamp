@@ -22,6 +22,9 @@ function CertificatePage() {
   const certificateUrl = certificate
     ? buildVerificationUrl(window.location.origin, certificate.certificateId)
     : "";
+  const verificationUrl = certificate?.verificationUrl?.includes("/verify/")
+    ? certificate.verificationUrl
+    : certificateUrl;
 
   const verifyCertificate = async () => {
     navigate(`/verify/${certificateId}`);
@@ -54,7 +57,7 @@ function CertificatePage() {
     pdf.setFontSize(14);
     pdf.text("Verification URL", 20, 164);
     pdf.setFontSize(10);
-    pdf.text(pdf.splitTextToSize(certificate.verificationUrl, 170), 20, 174);
+    pdf.text(pdf.splitTextToSize(verificationUrl, 170), 20, 174);
 
     const qrCanvas = qrRef.current?.querySelector("canvas");
 
@@ -208,14 +211,14 @@ function CertificatePage() {
                 Verification URL
               </p>
               <p className="mt-2 break-all text-sm font-semibold text-[#1E3A8A]">
-                {certificate.verificationUrl}
+                {verificationUrl}
               </p>
             </div>
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[auto_1fr] lg:items-center">
               <div ref={qrRef} className="mx-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:mx-0">
                 <QRCodeCanvas
-                  value={certificateUrl}
+                  value={verificationUrl}
                   size={160}
                   level="H"
                   includeMargin

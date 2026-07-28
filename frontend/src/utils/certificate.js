@@ -9,10 +9,29 @@ export const generateCertificateId = () => {
 };
 
 export const buildVerificationUrl = (origin, certificateId) =>
-  `${origin}/certificate/${certificateId}`;
+  `${origin}/verify/${certificateId}`;
 
 export const getAgreementSha256 = (agreement) =>
   agreement?.sha256 || agreement?.securityHash || "";
+
+export const getCertificateVerificationResult = (certificate, agreement) => {
+  if (!certificate) {
+    return "not-found";
+  }
+
+  if (!agreement) {
+    return "tampered";
+  }
+
+  const certificateHash = certificate.sha256 || "";
+  const agreementHash = getAgreementSha256(agreement);
+
+  if (!certificateHash || !agreementHash) {
+    return "tampered";
+  }
+
+  return certificateHash === agreementHash ? "verified" : "tampered";
+};
 
 export const formatCertificateDate = (issuedAt) => {
   if (!issuedAt) {

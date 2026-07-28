@@ -1,59 +1,78 @@
-import { useEffect, useState } from "react";
-import { getAgreementById } from "../services/agreementService";
+import { useCallback, useEffect, useState } from "react";
+import {
+  getAgreementById,
+  subscribeAgreementById,
+} from "../services/agreementService";
 
 export const useAgreement = (agreementId) => {
   const [agreement, setAgreement] = useState(null);
   const [loading, setLoading] = useState(Boolean(agreementId));
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadAgreement = useCallback(async () => {
+    if (!agreementId) {
+      setAgreement(null);
+      setError("");
+      setLoading(false);
+      return null;
+    }
 
-    const loadAgreement = async () => {
-      if (!agreementId) {
+    try {
+      setLoading(true);
+      setError("");
+
+      const agreementData = await getAgreementById(agreementId);
+
+      if (!agreementData) {
         setAgreement(null);
-        setError("");
-        setLoading(false);
-        return;
+        setError("Agreement not found.");
+        return null;
       }
 
-      try {
-        setLoading(true);
-        setError("");
+      setAgreement(agreementData);
+      return agreementData;
+    } catch (loadError) {
+      console.error(loadError);
+      setAgreement(null);
+      setError("Unable to load agreement.");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [agreementId]);
 
-        const agreementData = await getAgreementById(agreementId);
+  useEffect(() => {
+    if (!agreementId) {
+      setAgreement(null);
+      setError("");
+      setLoading(false);
+      return undefined;
+    }
 
-        if (!isMounted) {
-          return;
-        }
+    setLoading(true);
+    setError("");
 
+    return subscribeAgreementById(
+      agreementId,
+      (agreementData) => {
         if (!agreementData) {
           setAgreement(null);
           setError("Agreement not found.");
-          return;
+        } else {
+          setAgreement(agreementData);
+          setError("");
         }
 
-        setAgreement(agreementData);
-      } catch (loadError) {
-        console.error(loadError);
-
-        if (isMounted) {
-          setAgreement(null);
-          setError("Unable to load agreement.");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadAgreement();
-
-    return () => {
-      isMounted = false;
-    };
+        setLoading(false);
+      },
+      (subscriptionError) => {
+        console.error(subscriptionError);
+        setAgreement(null);
+        setError("Unable to load agreement.");
+        setLoading(false);
+      },
+    );
   }, [agreementId]);
 
-  return { agreement, loading, error };
+  return { agreement, loading, error, refetch: loadAgreement, setAgreement };
 };

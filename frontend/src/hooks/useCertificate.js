@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCertificateById } from "../services/certificateService";
+import { subscribeCertificateById } from "../services/certificateService";
 
 export const useCertificate = (certificateId) => {
   const [certificate, setCertificate] = useState(null);
@@ -7,52 +7,36 @@ export const useCertificate = (certificateId) => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    let isMounted = true;
+    if (!certificateId) {
+      setCertificate(null);
+      setError("Certificate not found.");
+      setLoading(false);
+      return undefined;
+    }
 
-    const loadCertificate = async () => {
-      if (!certificateId) {
-        setCertificate(null);
-        setError("Certificate not found.");
-        setLoading(false);
-        return;
-      }
+    setLoading(true);
+    setError("");
 
-      try {
-        setLoading(true);
-        setError("");
-
-        const certificateData = await getCertificateById(certificateId);
-
-        if (!isMounted) {
-          return;
-        }
-
+    return subscribeCertificateById(
+      certificateId,
+      (certificateData) => {
         if (!certificateData) {
           setCertificate(null);
           setError("Certificate not found.");
-          return;
+        } else {
+          setCertificate(certificateData);
+          setError("");
         }
 
-        setCertificate(certificateData);
-      } catch (loadError) {
+        setLoading(false);
+      },
+      (loadError) => {
         console.error(loadError);
-
-        if (isMounted) {
-          setCertificate(null);
-          setError("Unable to load certificate.");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadCertificate();
-
-    return () => {
-      isMounted = false;
-    };
+        setCertificate(null);
+        setError("Unable to load certificate.");
+        setLoading(false);
+      },
+    );
   }, [certificateId]);
 
   return { certificate, loading, error };

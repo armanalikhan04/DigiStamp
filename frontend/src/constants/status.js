@@ -8,5 +8,16 @@ export const AGREEMENT_STATUS = {
   DRAFT: "Draft",
   REVIEW: "Review",
   SIGNED: "Signed",
-  COMPLETED: "Completed",
+  COMPLETED: "COMPLETED",
+  LEGACY_COMPLETED: "Completed",
+  PENDING: "PENDING",
+  WAITING_FOR_PARTY_B: "WAITING_FOR_PARTY_B",
+  REJECTED: "REJECTED",
+};
+
+export const PARTY_STATUS = {
+  PENDING: "PENDING",
+  REVIEWED: "REVIEWED",
+  SIGNED: "SIGNED",
+  REJECTED: "REJECTED",
 };

@@ -6,5 +6,9 @@ export const formatSignedAt = (signedAt) => {
     return "Pending";
   }
 
+  if (signedAt.toDate) {
+    return signedAt.toDate().toLocaleString();
+  }
+
   return new Date(signedAt).toLocaleString();
 };

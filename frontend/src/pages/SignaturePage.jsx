@@ -50,13 +50,13 @@ function SignaturePage() {
     };
 
     if (signerRole === "Party A") {
-      navigate("/signature", {
+      navigate("/create-agreement", {
         state: {
           ...signingData,
           agreementId,
-          signerRole: "Party B",
+          reviewed: true,
           signatures: nextSignatures,
-          agreementStatus: "Party A Signed",
+          agreementStatus: "Waiting for Party B",
         },
       });
       return;
@@ -209,7 +209,7 @@ function SignaturePage() {
                 </Button>
                 <Button onClick={continueSigning} disabled={!currentSignature}>
                   {signerRole === "Party A"
-                    ? "Continue to Party B →"
+                    ? "Continue to Invitation Review →"
                     : "Continue to Final Review →"}
                 </Button>
               </div>

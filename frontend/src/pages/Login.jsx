@@ -1,5 +1,6 @@
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useAuth } from "../context/useAuth";
 import { auth } from "../services/firebase";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -15,8 +16,17 @@ import {
 function Login(){
 
 const navigate = useNavigate();
+const location = useLocation();
+const redirectTo = location.state?.redirectTo || "/dashboard";
+const { user, loading } = useAuth();
 const [email,setEmail] = useState("");
 const [password,setPassword] = useState("");
+
+useEffect(() => {
+if (!loading && user) {
+navigate(redirectTo, { replace: true });
+}
+}, [loading, navigate, redirectTo, user]);
 
 
 const signup = async()=>{
@@ -30,6 +40,7 @@ password
 );
 
 alert("Account Created Successfully");
+navigate(redirectTo);
 
 }
 
@@ -52,7 +63,7 @@ email,
 password
 );
 
-navigate("/dashboard");
+navigate(redirectTo);
 
 }
 

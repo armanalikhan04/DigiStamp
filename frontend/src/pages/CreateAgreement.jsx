@@ -2,6 +2,9 @@ import { generateHash } from "../services/security";
 import { useLocation, useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import { useState } from "react";
+import { AGREEMENT_STATUS, PARTY_STATUS } from "../constants/status";
+import { useAuth } from "../context/useAuth";
+import { useAgreement } from "../hooks/useAgreement";
 import { createAgreement } from "../services/agreementService";
 import { createCertificate } from "../services/certificateService";
 import { generateAgreement } from "../services/gemini";
@@ -13,8 +16,12 @@ import ProgressSteps from "../components/ui/ProgressSteps";
 import SectionHeader from "../components/ui/SectionHeader";
 import StatusBadge from "../components/ui/StatusBadge";
 import {
+  buildAgreementInvitationUrl,
+  buildInvitationMessage,
   buildSignedAgreementDocument,
   generateAgreementId,
+  getAgreementStatusLabel,
+  getAgreementStatusVariant,
 } from "../utils/agreement";
 import {
   buildVerificationUrl,
@@ -25,8 +32,6 @@ import {
   getSignatureRecord,
 } from "../utils/signature";
 
-import { Timestamp } from "firebase/firestore";
-
 const toFirestoreSignature = (signatureRecord) => {
   if (!signatureRecord?.signature) {
     return null;
@@ -35,7 +40,7 @@ const toFirestoreSignature = (signatureRecord) => {
   return {
     method: signatureRecord.signature.method,
     value: signatureRecord.signature.value,
-    signedAt: Timestamp.fromDate(new Date(signatureRecord.signedAt)),
+    signedAt: new Date(signatureRecord.signedAt),
   };
 };
 
@@ -75,6 +80,7 @@ function CreateAgreement(){
 
         const location = useLocation();
         const navigate = useNavigate();
+        const { user } = useAuth();
 
 const deal = location.state;
 
@@ -96,7 +102,12 @@ const isFinalReview = Boolean(deal?.signatures?.["Party A"] && deal?.signatures?
 const partyASignature = getSignatureRecord(deal?.signatures, "Party A");
 const partyBSignature = getSignatureRecord(deal?.signatures, "Party B");
 const [isSaved,setIsSaved] = useState(false);
+const [invitation,setInvitation] = useState(null);
 const [loading,setLoading] = useState(false);
+const { agreement: liveAgreement } = useAgreement(invitation?.agreementId);
+const liveAgreementCompleted =
+liveAgreement?.agreementStatus === AGREEMENT_STATUS.COMPLETED ||
+liveAgreement?.agreementStatus === AGREEMENT_STATUS.LEGACY_COMPLETED;
 const handleChange=(e)=>{
 
 setForm({
@@ -135,7 +146,7 @@ agreementStatus: "AI Generated"
 
 }
 
-catch(error){
+catch{
 
 alert("AI limit reached. Try again after some time.");
 
@@ -155,6 +166,8 @@ try{
 
 
 const agreementId = generateAgreementId();
+const hasPartyASignature = Boolean(partyASignature?.signature);
+const hasPartyBSignature = Boolean(partyBSignature?.signature);
 const signatures = {
 partyA: toFirestoreSignature(partyASignature),
 partyB: toFirestoreSignature(partyBSignature)
@@ -168,6 +181,10 @@ partyBSignature
 const securityHash = generateHash(
 finalSignedDocument
 );
+const invitationUrl = buildAgreementInvitationUrl(window.location.origin, agreementId);
+const shouldCompleteAgreement = hasPartyASignature && hasPartyBSignature;
+const certificateId = shouldCompleteAgreement ? generateCertificateId() : "";
+const issuedAt = new Date();
 
 
 await createAgreement({
@@ -192,12 +209,31 @@ securityStatus:"pending",
 
 createdAt:new Date(),
 
-signatures: signatures
+signatures: signatures,
+
+partyAStatus: hasPartyASignature ? PARTY_STATUS.SIGNED : PARTY_STATUS.PENDING,
+
+partyBStatus: hasPartyBSignature ? PARTY_STATUS.SIGNED : PARTY_STATUS.PENDING,
+
+createdBy: user?.uid || user?.email || "unknown",
+
+createdByEmail: user?.email || "",
+
+agreementStatus: shouldCompleteAgreement
+? AGREEMENT_STATUS.COMPLETED
+: hasPartyASignature
+? AGREEMENT_STATUS.WAITING_FOR_PARTY_B
+: AGREEMENT_STATUS.PENDING,
+
+invitationUrl: invitationUrl,
+
+certificateId: certificateId,
+
+certificateStatus: shouldCompleteAgreement ? "Verified" : "Pending"
 
 });
 
-const certificateId = generateCertificateId();
-const issuedAt = new Date();
+if (shouldCompleteAgreement) {
 const verificationUrl = buildVerificationUrl(window.location.origin, certificateId);
 
 await createCertificate(certificateId, {
@@ -212,7 +248,7 @@ partyB: form.partyB,
 
 agreementType: deal?.dealType || "Digital Agreement",
 
-issuedAt: Timestamp.fromDate(issuedAt),
+issuedAt: issuedAt,
 
 sha256: securityHash,
 
@@ -225,6 +261,21 @@ verificationUrl: verificationUrl
 setIsSaved(true);
 alert("Agreement Saved Successfully");
 navigate(`/certificate/${certificateId}`);
+return;
+}
+
+setInvitation({
+agreementId,
+invitationUrl,
+message: buildInvitationMessage({
+agreementId,
+partyA: form.partyA,
+partyB: form.partyB,
+invitationUrl
+})
+});
+setIsSaved(true);
+alert("Agreement Saved Successfully. Invitation link is ready.");
 
 
 }
@@ -237,10 +288,59 @@ alert(error.message);
 
 };
 
+const copyInvitationLink = async () => {
+if (!invitation?.invitationUrl) {
+return;
+}
+
+await navigator.clipboard.writeText(invitation.invitationUrl);
+alert("Invitation link copied.");
+};
+
+const copyInvitationMessage = async () => {
+if (!invitation?.message) {
+return;
+}
+
+await navigator.clipboard.writeText(invitation.message);
+alert("Invitation copied.");
+};
+
+const shareInvitationLink = async () => {
+if (!invitation?.invitationUrl) {
+return;
+}
+
+if (navigator.share) {
+await navigator.share({
+title: "DigiStamp agreement invitation",
+text: invitation.message,
+url: invitation.invitationUrl
+});
+return;
+}
+
+await copyInvitationLink();
+};
+
 const generatePDF = () => {
 
 
 const doc = new jsPDF();
+const pdfPartyASignature = partyASignature?.signature
+? partyASignature
+: {
+signerRole: "Party A",
+signature: liveAgreement?.signatures?.partyA,
+signedAt: liveAgreement?.signatures?.partyA?.signedAt
+};
+const pdfPartyBSignature = partyBSignature?.signature
+? partyBSignature
+: {
+signerRole: "Party B",
+signature: liveAgreement?.signatures?.partyB,
+signedAt: liveAgreement?.signatures?.partyB?.signedAt
+};
 
 
 doc.setFontSize(20);
@@ -360,8 +460,8 @@ yPosition + 44
 );
 };
 
-addSignatureToPDF("Party A", partyASignature, signatureY + 14);
-addSignatureToPDF("Party B", partyBSignature, signatureY + 72);
+addSignatureToPDF("Party A", pdfPartyASignature, signatureY + 14);
+addSignatureToPDF("Party B", pdfPartyBSignature, signatureY + 72);
 
 doc.save(
 "DigiStamp_Agreement.pdf"
@@ -498,6 +598,92 @@ Document secured with SHA-256
 </p>
 
 
+</Card>
+
+}
+
+{
+invitation &&
+
+<Card className="border-blue-100 bg-blue-50 p-6">
+<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+<div>
+<h2 className="text-xl font-bold text-[#1E3A8A]">
+{liveAgreementCompleted ? "Agreement completed" : "Party B invitation ready"}
+</h2>
+<p className="mt-1 text-sm leading-6 text-slate-600">
+{liveAgreementCompleted
+? "Party B has signed. Certificate actions are ready."
+: "Share this secure link with Party B so they can review and sign the agreement."}
+</p>
+</div>
+<StatusBadge variant={getAgreementStatusVariant(liveAgreement?.agreementStatus || AGREEMENT_STATUS.WAITING_FOR_PARTY_B)}>
+{getAgreementStatusLabel(liveAgreement?.agreementStatus || AGREEMENT_STATUS.WAITING_FOR_PARTY_B)}
+</StatusBadge>
+</div>
+
+<div className="rounded-2xl border border-blue-100 bg-white p-4">
+<p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+Invitation Link
+</p>
+<p className="mt-2 break-all text-sm font-semibold text-[#1E3A8A]">
+{invitation.invitationUrl}
+</p>
+</div>
+
+{liveAgreementCompleted && (
+<div className="mb-5 grid gap-3 sm:grid-cols-2">
+<div className="rounded-2xl bg-white p-4">
+<p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+Certificate ID
+</p>
+<p className="mt-1 break-words text-sm font-semibold text-slate-950">
+{liveAgreement?.certificateId || "Certificate ready"}
+</p>
+</div>
+<div className="rounded-2xl bg-white p-4">
+<p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+Party B Status
+</p>
+<p className="mt-1 text-sm font-semibold text-slate-950">
+{liveAgreement?.partyBStatus || PARTY_STATUS.PENDING}
+</p>
+</div>
+</div>
+)}
+
+<div className="mt-5 flex flex-wrap gap-3">
+{!liveAgreementCompleted && (
+<>
+<Button onClick={copyInvitationLink}>
+Copy Link
+</Button>
+<Button onClick={copyInvitationMessage} variant="secondary">
+Copy Invitation
+</Button>
+<Button onClick={shareInvitationLink} variant="success">
+Share Link
+</Button>
+</>
+)}
+{liveAgreementCompleted && (
+<>
+<Button onClick={generatePDF} variant="secondary">
+Download PDF
+</Button>
+{liveAgreement?.certificateId && (
+<>
+<Button onClick={() => navigate(`/certificate/${liveAgreement.certificateId}`)}>
+View Certificate
+</Button>
+<Button onClick={() => navigate(`/verify/${liveAgreement.certificateId}`)} variant="success">
+Verify Certificate
+</Button>
+</>
+)}
+</>
+)}
+</div>
 </Card>
 
 }

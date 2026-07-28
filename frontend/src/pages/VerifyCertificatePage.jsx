@@ -5,10 +5,12 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import SectionHeader from "../components/ui/SectionHeader";
 import StatusBadge from "../components/ui/StatusBadge";
+import { useAuth } from "../context/useAuth";
 import { useAgreement } from "../hooks/useAgreement";
 import { useCertificate } from "../hooks/useCertificate";
 import {
   formatCertificateDate,
+  getCertificateVerificationResult,
   getAgreementSha256,
   getVerificationStatusCardClass,
   getVerificationStatusTextClass,
@@ -19,6 +21,7 @@ import {
 function VerifyCertificatePage() {
   const { certificateId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [result, setResult] = useState("not-found");
   const [verifiedAt, setVerifiedAt] = useState("");
   const {
@@ -53,12 +56,11 @@ function VerifyCertificatePage() {
     }
 
     if (agreementError || !agreement) {
-      setResult("tampered");
+      setResult(getCertificateVerificationResult(certificate, null));
       return;
     }
 
-    const agreementHash = getAgreementSha256(agreement);
-    setResult(certificate.sha256 === agreementHash ? "verified" : "tampered");
+    setResult(getCertificateVerificationResult(certificate, agreement));
   }, [
     agreement,
     agreementError,
@@ -110,7 +112,7 @@ function VerifyCertificatePage() {
           title="Verify DigiStamp certificate"
           description="Public certificate verification is available without login."
           actions={
-            <Button onClick={() => navigate("/")} variant="secondary">
+            <Button onClick={() => navigate(user ? "/dashboard" : "/")} variant="secondary">
               Back to Home
             </Button>
           }
