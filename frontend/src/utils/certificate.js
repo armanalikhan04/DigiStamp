@@ -8,6 +8,21 @@ export const generateCertificateId = () => {
   return `DS-${year}-${randomPart}`;
 };
 
+const hashString = (value) => {
+  let hash = 0;
+  const input = String(value || "");
+
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash << 5) - hash + input.charCodeAt(index);
+    hash |= 0;
+  }
+
+  return Math.abs(hash).toString(16).padStart(8, "0").slice(0, 8).toUpperCase();
+};
+
+export const generateCertificateIdForAgreement = (agreementId, issuedAt = new Date()) =>
+  `DS-${new Date(issuedAt).getFullYear()}-${hashString(agreementId)}`;
+
 export const buildVerificationUrl = (origin, certificateId) =>
   `${origin}/verify/${certificateId}`;
 
@@ -54,6 +69,10 @@ export const getVerificationStatusTitle = (result) => {
     return "Certificate Tampered";
   }
 
+  if (result === "error") {
+    return "Verification Error";
+  }
+
   return "Certificate Not Found";
 };
 
@@ -64,6 +83,10 @@ export const getVerificationStatusCardClass = (result) => {
 
   if (result === "tampered") {
     return "border-red-100 bg-red-50";
+  }
+
+  if (result === "error") {
+    return "border-amber-100 bg-amber-50";
   }
 
   return "border-slate-200 bg-slate-50";
@@ -78,6 +101,10 @@ export const getVerificationStatusTextClass = (result) => {
     return "text-red-700";
   }
 
+  if (result === "error") {
+    return "text-amber-700";
+  }
+
   return "text-slate-700";
 };
 
@@ -88,6 +115,10 @@ export const getVerificationStatusVariant = (result) => {
 
   if (result === "tampered") {
     return "danger";
+  }
+
+  if (result === "error") {
+    return "warning";
   }
 
   return "default";

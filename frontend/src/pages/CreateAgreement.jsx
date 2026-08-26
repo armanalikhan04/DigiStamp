@@ -1,12 +1,12 @@
 import { generateHash } from "../services/security";
 import { useLocation, useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AGREEMENT_STATUS, PARTY_STATUS } from "../constants/status";
 import { useAuth } from "../context/useAuth";
 import { useAgreement } from "../hooks/useAgreement";
 import { createAgreement } from "../services/agreementService";
-import { createCertificate } from "../services/certificateService";
+import { createCertificateIfMissing } from "../services/certificateService";
 import { generateAgreement } from "../services/gemini";
 import Layout from "../components/layout/Layout";
 import Button from "../components/ui/Button";
@@ -25,7 +25,7 @@ import {
 } from "../utils/agreement";
 import {
   buildVerificationUrl,
-  generateCertificateId,
+  generateCertificateIdForAgreement,
 } from "../utils/certificate";
 import {
   formatSignedAt,
@@ -104,6 +104,8 @@ const partyBSignature = getSignatureRecord(deal?.signatures, "Party B");
 const [isSaved,setIsSaved] = useState(false);
 const [invitation,setInvitation] = useState(null);
 const [loading,setLoading] = useState(false);
+const [saving,setSaving] = useState(false);
+const savingRef = useRef(false);
 const { agreement: liveAgreement } = useAgreement(invitation?.agreementId);
 const liveAgreementCompleted =
 liveAgreement?.agreementStatus === AGREEMENT_STATUS.COMPLETED ||
@@ -162,8 +164,14 @@ setLoading(false);
 
 const saveAgreement = async()=>{
 
+if (saving || savingRef.current || isSaved) {
+return;
+}
+
 try{
 
+savingRef.current = true;
+setSaving(true);
 
 const agreementId = generateAgreementId();
 const hasPartyASignature = Boolean(partyASignature?.signature);
@@ -183,7 +191,7 @@ finalSignedDocument
 );
 const invitationUrl = buildAgreementInvitationUrl(window.location.origin, agreementId);
 const shouldCompleteAgreement = hasPartyASignature && hasPartyBSignature;
-const certificateId = shouldCompleteAgreement ? generateCertificateId() : "";
+const certificateId = shouldCompleteAgreement ? generateCertificateIdForAgreement(agreementId) : "";
 const issuedAt = new Date();
 
 
@@ -194,6 +202,12 @@ agreementId: agreementId,
 partyA: form.partyA,
 
 partyB: form.partyB,
+
+partyAEmail: (deal?.partyAEmail || user?.email || "").trim().toLowerCase(),
+
+partyBEmail: (deal?.partyBEmail || "").trim().toLowerCase(),
+
+agreementType: deal?.dealType || "Digital Agreement",
 
 amount: form.amount,
 
@@ -217,7 +231,7 @@ partyBStatus: hasPartyBSignature ? PARTY_STATUS.SIGNED : PARTY_STATUS.PENDING,
 
 createdBy: user?.uid || user?.email || "unknown",
 
-createdByEmail: user?.email || "",
+createdByEmail: user?.email?.trim().toLowerCase() || "",
 
 agreementStatus: shouldCompleteAgreement
 ? AGREEMENT_STATUS.COMPLETED
@@ -236,7 +250,7 @@ certificateStatus: shouldCompleteAgreement ? "Verified" : "Pending"
 if (shouldCompleteAgreement) {
 const verificationUrl = buildVerificationUrl(window.location.origin, certificateId);
 
-await createCertificate(certificateId, {
+await createCertificateIfMissing(certificateId, {
 
 certificateId: certificateId,
 
@@ -282,7 +296,13 @@ alert("Agreement Saved Successfully. Invitation link is ready.");
 
 catch(error){
 
-alert(error.message);
+alert(`${error.code ? `${error.code}: ` : ""}${error.message || "Unable to save agreement."}`);
+
+}
+finally{
+
+savingRef.current = false;
+setSaving(false);
 
 }
 
@@ -293,8 +313,12 @@ if (!invitation?.invitationUrl) {
 return;
 }
 
+try {
 await navigator.clipboard.writeText(invitation.invitationUrl);
 alert("Invitation link copied.");
+} catch {
+alert("Unable to copy automatically. Please select and copy the invitation link manually.");
+}
 };
 
 const copyInvitationMessage = async () => {
@@ -302,8 +326,12 @@ if (!invitation?.message) {
 return;
 }
 
+try {
 await navigator.clipboard.writeText(invitation.message);
 alert("Invitation copied.");
+} catch {
+alert("Unable to copy automatically. Please select and copy the invitation message manually.");
+}
 };
 
 const shareInvitationLink = async () => {
@@ -311,6 +339,7 @@ if (!invitation?.invitationUrl) {
 return;
 }
 
+try {
 if (navigator.share) {
 await navigator.share({
 title: "DigiStamp agreement invitation",
@@ -321,6 +350,9 @@ return;
 }
 
 await copyInvitationLink();
+} catch {
+alert("Sharing failed. Please copy the invitation link manually.");
+}
 };
 
 const generatePDF = () => {
@@ -798,10 +830,11 @@ Party A and Party B signatures are captured in React state for this session.
 <Button
 
 onClick={saveAgreement}
+disabled={saving || isSaved}
 
 >
 
-Save Agreement
+{saving ? "Saving..." : isSaved ? "Agreement Saved" : "Save Agreement"}
 
 </Button>
 

@@ -15,6 +15,13 @@ function SignaturePage() {
   const signerRole = signingData.signerRole || "Party A";
   const signatures = signingData.signatures || {};
   const [currentSignature, setCurrentSignature] = useState(null);
+  const hasSigningData = Boolean(
+    signingData.partyA &&
+    signingData.partyB &&
+    signingData.amount &&
+    signingData.aiText &&
+    signingData.reviewed,
+  );
 
   const agreementId = useMemo(() => {
     if (signingData.agreementId) {
@@ -72,6 +79,33 @@ function SignaturePage() {
       },
     });
   };
+
+  if (!hasSigningData) {
+    return (
+      <Layout>
+        <div className="page-transition">
+          <Card className="mx-auto max-w-3xl p-8 text-center">
+            <StatusBadge variant="warning">Session Missing</StatusBadge>
+            <h1 className="mt-4 text-2xl font-bold text-slate-950">
+              Signature step cannot be restored
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              This signature step depends on a reviewed agreement draft. Return
+              to Create Deal to restart the workflow safely.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Button onClick={() => navigate("/create-deal")}>
+                Create Deal
+              </Button>
+              <Button onClick={() => navigate("/dashboard")} variant="secondary">
+                Dashboard
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

@@ -21,6 +21,13 @@ function SignaturePad({ signerName, signerRole, onChange }) {
   const [typedSignature, setTypedSignature] = useState(signerName || "");
   const [fontFamily, setFontFamily] = useState(signatureFonts[0]);
   const [uploadedSignature, setUploadedSignature] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const drawingImageRef = useRef("");
+  const hasDrawingRef = useRef(false);
+
+  useEffect(() => {
+    hasDrawingRef.current = hasDrawing;
+  }, [hasDrawing]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -33,6 +40,7 @@ function SignaturePad({ signerName, signerRole, onChange }) {
     const resizeCanvas = () => {
       const ratio = window.devicePixelRatio || 1;
       const rect = wrapper.getBoundingClientRect();
+      const previousImage = canvas.toDataURL("image/png");
       canvas.width = rect.width * ratio;
       canvas.height = 260 * ratio;
       canvas.style.height = "260px";
@@ -42,6 +50,16 @@ function SignaturePad({ signerName, signerRole, onChange }) {
       context.lineWidth = 2.5;
       context.lineCap = "round";
       context.strokeStyle = "#1E3A8A";
+
+      const imageToRestore = drawingImageRef.current || previousImage;
+
+      if (hasDrawingRef.current && imageToRestore) {
+        const image = new Image();
+        image.onload = () => {
+          context.drawImage(image, 0, 0, rect.width, 260);
+        };
+        image.src = imageToRestore;
+      }
     };
 
     resizeCanvas();
@@ -128,6 +146,10 @@ function SignaturePad({ signerName, signerRole, onChange }) {
   };
 
   const stopDrawing = () => {
+    if (isDrawing && canvasRef.current) {
+      drawingImageRef.current = canvasRef.current.toDataURL("image/png");
+    }
+
     setIsDrawing(false);
   };
 
@@ -139,8 +161,10 @@ function SignaturePad({ signerName, signerRole, onChange }) {
     }
 
     setHasDrawing(false);
+    drawingImageRef.current = "";
     setUploadedSignature("");
     setTypedSignature("");
+    setUploadError("");
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -154,9 +178,31 @@ function SignaturePad({ signerName, signerRole, onChange }) {
       return;
     }
 
+    const allowedTypes = ["image/png", "image/jpeg"];
+    const maxFileSize = 2 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      setUploadedSignature("");
+      setUploadError("Upload a PNG or JPG signature image.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > maxFileSize) {
+      setUploadedSignature("");
+      setUploadError("Signature image must be 2 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
+      setUploadError("");
       setUploadedSignature(reader.result);
+    };
+    reader.onerror = () => {
+      setUploadedSignature("");
+      setUploadError("Unable to read this signature image.");
     };
     reader.readAsDataURL(file);
   };
@@ -262,6 +308,12 @@ function SignaturePad({ signerName, signerRole, onChange }) {
                 className="mt-4 block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-[#1E3A8A] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
               />
             </div>
+
+            {uploadError && (
+              <p className="text-sm font-semibold text-red-600">
+                {uploadError}
+              </p>
+            )}
 
             {uploadedSignature && (
               <div className="rounded-2xl border border-slate-200 bg-white p-5">

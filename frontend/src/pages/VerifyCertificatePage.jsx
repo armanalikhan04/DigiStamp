@@ -46,12 +46,22 @@ function VerifyCertificatePage() {
       return;
     }
 
+    if (certificateError && certificateError !== "Certificate not found.") {
+      setResult("error");
+      return;
+    }
+
     if (certificateError || !certificate) {
       setResult("not-found");
       return;
     }
 
     if (agreementLoading || agreementPending) {
+      return;
+    }
+
+    if (agreementError && agreementError !== "Agreement not found.") {
+      setResult("error");
       return;
     }
 
@@ -88,7 +98,7 @@ function VerifyCertificatePage() {
     pdf.text(`Party B: ${certificate.partyB}`, 20, 74);
     pdf.text(`Agreement Type: ${certificate.agreementType}`, 20, 84);
     pdf.text(`Issue Date: ${formatCertificateDate(certificate.issuedAt)}`, 20, 94);
-    pdf.text(`Certificate Status: ${result === "verified" ? "Verified" : "Tampered"}`, 20, 104);
+    pdf.text(`Certificate Status: ${statusTitle}`, 20, 104);
     pdf.text(`Verification Timestamp: ${verifiedAt}`, 20, 114);
 
     pdf.setFontSize(14);
@@ -136,7 +146,7 @@ function VerifyCertificatePage() {
               </p>
             </div>
             <StatusBadge variant={statusVariant}>
-              {result === "verified" ? "Verified" : result === "tampered" ? "Tampered" : "Not Found"}
+              {result === "verified" ? "Verified" : result === "tampered" ? "Tampered" : result === "error" ? "Error" : "Not Found"}
             </StatusBadge>
           </div>
         </Card>
@@ -163,6 +173,18 @@ function VerifyCertificatePage() {
           </Card>
         )}
 
+        {result === "error" && !loading && (
+          <Card className="mt-6 border-amber-100 bg-amber-50 p-6">
+            <h2 className="text-xl font-bold text-amber-700">
+              Verification could not be completed
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-amber-700">
+              DigiStamp could not access the required certificate or agreement
+              record. Check connectivity and Firestore read permissions.
+            </p>
+          </Card>
+        )}
+
         {certificate && (
           <Card className="mt-6 p-6 sm:p-8">
             <div className="mb-6 flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -174,8 +196,8 @@ function VerifyCertificatePage() {
                   Platform: DigiStamp
                 </p>
               </div>
-              <StatusBadge variant={result === "verified" ? "success" : "danger"}>
-                {result === "verified" ? "Verified" : "Tampered"}
+              <StatusBadge variant={statusVariant}>
+                {statusTitle}
               </StatusBadge>
             </div>
 

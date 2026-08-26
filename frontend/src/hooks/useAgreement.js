@@ -3,8 +3,10 @@ import {
   getAgreementById,
   subscribeAgreementById,
 } from "../services/agreementService";
+import { useAuth } from "../context/useAuth";
 
 export const useAgreement = (agreementId) => {
+  const { user } = useAuth();
   const [agreement, setAgreement] = useState(null);
   const [loading, setLoading] = useState(Boolean(agreementId));
   const [error, setError] = useState("");
@@ -21,7 +23,10 @@ export const useAgreement = (agreementId) => {
       setLoading(true);
       setError("");
 
-      const agreementData = await getAgreementById(agreementId);
+      const agreementData = await getAgreementById(agreementId, {
+        uid: user?.uid,
+        email: user?.email,
+      });
 
       if (!agreementData) {
         setAgreement(null);
@@ -34,12 +39,16 @@ export const useAgreement = (agreementId) => {
     } catch (loadError) {
       console.error(loadError);
       setAgreement(null);
-      setError("Unable to load agreement.");
+      setError(
+        loadError.code === "permission-denied"
+          ? "Access denied."
+          : "Unable to load agreement.",
+      );
       return null;
     } finally {
       setLoading(false);
     }
-  }, [agreementId]);
+  }, [agreementId, user]);
 
   useEffect(() => {
     if (!agreementId) {
@@ -68,11 +77,19 @@ export const useAgreement = (agreementId) => {
       (subscriptionError) => {
         console.error(subscriptionError);
         setAgreement(null);
-        setError("Unable to load agreement.");
+        setError(
+          subscriptionError.code === "permission-denied"
+            ? "Access denied."
+            : "Unable to load agreement.",
+        );
         setLoading(false);
       },
+      {
+        uid: user?.uid,
+        email: user?.email,
+      },
     );
-  }, [agreementId]);
+  }, [agreementId, user]);
 
   return { agreement, loading, error, refetch: loadAgreement, setAgreement };
 };

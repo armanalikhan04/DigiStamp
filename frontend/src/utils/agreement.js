@@ -8,29 +8,79 @@ export const buildAgreementInvitationUrl = (origin, agreementId) =>
 export const buildInvitationMessage = ({ agreementId, partyA, partyB, invitationUrl }) =>
   `DigiStamp agreement invitation\n\nAgreement ID: ${agreementId}\nFrom: ${partyA || "Party A"}\nTo: ${partyB || "Party B"}\n\nReview and sign here: ${invitationUrl}`;
 
+const normalizeString = (value) =>
+  typeof value === "string" ? value.trim() : value ? String(value).trim() : "";
+
+export const normalizeTimestamp = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toISOString();
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value.toDate === "function") {
+    return value.toDate().toISOString();
+  }
+
+  if (typeof value.seconds === "number") {
+    return new Date(
+      value.seconds * 1000 + Math.floor((value.nanoseconds || 0) / 1000000),
+    ).toISOString();
+  }
+
+  return normalizeString(value);
+};
+
+const normalizeSignature = (signatureRecord = {}) => ({
+  method: normalizeString(signatureRecord.method),
+  value: normalizeString(signatureRecord.value),
+  signedAt: normalizeTimestamp(signatureRecord.signedAt),
+});
+
+const normalizeRouteSignature = (signatureRecord) =>
+  normalizeSignature({
+    method: signatureRecord?.signature?.method,
+    value: signatureRecord?.signature?.value,
+    signedAt: signatureRecord?.signedAt,
+  });
+
+export const stableStringify = (value) => {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+};
+
 export const buildSignedAgreementDocument = ({
   aiText,
   form,
   partyASignature,
   partyBSignature,
 }) =>
-  JSON.stringify({
-    agreementText: aiText,
-    partyA: form.partyA,
-    partyB: form.partyB,
-    amount: form.amount,
-    terms: form.terms,
+  stableStringify({
+    agreementText: normalizeString(aiText),
+    partyA: normalizeString(form.partyA),
+    partyB: normalizeString(form.partyB),
+    amount: normalizeString(form.amount),
+    terms: normalizeString(form.terms),
     signatures: {
-      partyA: {
-        method: partyASignature?.signature?.method || "",
-        value: partyASignature?.signature?.value || "",
-        signedAt: partyASignature?.signedAt || "",
-      },
-      partyB: {
-        method: partyBSignature?.signature?.method || "",
-        value: partyBSignature?.signature?.value || "",
-        signedAt: partyBSignature?.signedAt || "",
-      },
+      partyA: normalizeRouteSignature(partyASignature),
+      partyB: normalizeRouteSignature(partyBSignature),
     },
   });
 
@@ -38,23 +88,15 @@ export const buildSignedAgreementDocumentFromAgreement = ({
   agreement,
   partyBSignature,
 }) =>
-  JSON.stringify({
-    agreementText: agreement.aiAgreement || "",
-    partyA: agreement.partyA || "",
-    partyB: agreement.partyB || "",
-    amount: agreement.amount || "",
-    terms: agreement.userTerms || agreement.terms || "",
+  stableStringify({
+    agreementText: normalizeString(agreement.aiAgreement),
+    partyA: normalizeString(agreement.partyA),
+    partyB: normalizeString(agreement.partyB),
+    amount: normalizeString(agreement.amount),
+    terms: normalizeString(agreement.userTerms || agreement.terms),
     signatures: {
-      partyA: {
-        method: agreement.signatures?.partyA?.method || "",
-        value: agreement.signatures?.partyA?.value || "",
-        signedAt: agreement.signatures?.partyA?.signedAt || "",
-      },
-      partyB: {
-        method: partyBSignature?.method || "",
-        value: partyBSignature?.value || "",
-        signedAt: partyBSignature?.signedAt || "",
-      },
+      partyA: normalizeSignature(agreement.signatures?.partyA),
+      partyB: normalizeSignature(partyBSignature || agreement.signatures?.partyB),
     },
   });
 

@@ -1,16 +1,33 @@
 import { useEffect, useState } from "react";
-import { subscribeAgreements } from "../services/agreementService";
+import { useAuth } from "../context/useAuth";
+import { subscribeAgreementsForUser } from "../services/agreementService";
 
 export const useAgreements = () => {
+  const { user, loading: authLoading } = useAuth();
   const [agreements, setAgreements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (authLoading) {
+      return undefined;
+    }
+
+    if (!user) {
+      setAgreements([]);
+      setLoading(false);
+      setError("");
+      return undefined;
+    }
+
     setLoading(true);
     setError("");
 
-    return subscribeAgreements(
+    return subscribeAgreementsForUser(
+      {
+        uid: user.uid,
+        email: user.email,
+      },
       (agreementList) => {
         setAgreements(agreementList);
         setLoading(false);
@@ -21,7 +38,7 @@ export const useAgreements = () => {
         setLoading(false);
       },
     );
-  }, []);
+  }, [authLoading, user]);
 
   return { agreements, loading, error };
 };

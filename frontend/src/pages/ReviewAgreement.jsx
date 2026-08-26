@@ -21,6 +21,13 @@ function ReviewAgreement() {
     return new Date().toLocaleString();
   }, [reviewData.createdAt]);
 
+  const hasReviewData = Boolean(
+    reviewData.partyA &&
+    reviewData.partyB &&
+    reviewData.amount &&
+    reviewData.aiText,
+  );
+
   const goBack = () => {
     navigate("/create-agreement", {
       state: {
@@ -41,6 +48,33 @@ function ReviewAgreement() {
       },
     });
   };
+
+  if (!hasReviewData) {
+    return (
+      <Layout>
+        <div className="page-transition">
+          <Card className="mx-auto max-w-3xl p-8 text-center">
+            <StatusBadge variant="warning">Draft Missing</StatusBadge>
+            <h1 className="mt-4 text-2xl font-bold text-slate-950">
+              Agreement review cannot be restored
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              This review step depends on the current draft session. Start from
+              Create Deal to regenerate the agreement safely.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Button onClick={() => navigate("/create-deal")}>
+                Create Deal
+              </Button>
+              <Button onClick={() => navigate("/dashboard")} variant="secondary">
+                Dashboard
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

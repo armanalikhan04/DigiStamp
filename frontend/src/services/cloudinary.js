@@ -34,6 +34,14 @@ body:data
 
 const result = await response.json();
 
+if (!response.ok) {
+throw new Error(result?.error?.message || "Cloudinary upload failed.");
+}
+
+if (!result.secure_url) {
+throw new Error("Cloudinary upload did not return a secure image URL.");
+}
+
 
 return result.secure_url;
 

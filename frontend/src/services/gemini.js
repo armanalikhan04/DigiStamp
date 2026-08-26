@@ -43,7 +43,3 @@ Include:
   return result.response.text();
 
 }
-console.log(
-"Gemini Key:",
-import.meta.env.VITE_GEMINI_API_KEY
-);

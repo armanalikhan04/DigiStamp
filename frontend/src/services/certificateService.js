@@ -8,6 +8,7 @@ import {
   setDoc,
   where,
 } from "firebase/firestore";
+import { generateCertificateIdForAgreement } from "../utils/certificate";
 import { db } from "./firebase";
 
 export const createCertificate = (certificateId, certificateData) =>
@@ -69,16 +70,41 @@ export const getCertificateByAgreementId = async (agreementId) => {
 };
 
 export const createCertificateIfMissing = async (certificateId, certificateData) => {
-  const existingCertificate = await getCertificateByAgreementId(certificateData.agreementId);
+  const idempotentCertificateId =
+    certificateData.certificateId ||
+    certificateId ||
+    generateCertificateIdForAgreement(certificateData.agreementId, certificateData.issuedAt);
+  const certificateSnapshot = await getDoc(doc(db, "certificates", idempotentCertificateId));
+
+  if (certificateSnapshot.exists()) {
+    return {
+      id: certificateSnapshot.id,
+      ...certificateSnapshot.data(),
+    };
+  }
+
+  let existingCertificate = null;
+
+  try {
+    existingCertificate = await getCertificateByAgreementId(certificateData.agreementId);
+  } catch (error) {
+    if (error.code !== "permission-denied") {
+      throw error;
+    }
+  }
 
   if (existingCertificate) {
     return existingCertificate;
   }
 
-  await createCertificate(certificateId, certificateData);
+  await createCertificate(idempotentCertificateId, {
+    ...certificateData,
+    certificateId: idempotentCertificateId,
+  });
 
   return {
-    id: certificateId,
+    id: idempotentCertificateId,
     ...certificateData,
+    certificateId: idempotentCertificateId,
   };
 };

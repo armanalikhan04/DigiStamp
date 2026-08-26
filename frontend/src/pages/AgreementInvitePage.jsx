@@ -10,15 +10,10 @@ import { AGREEMENT_STATUS, PARTY_STATUS } from "../constants/status";
 import { useAuth } from "../context/useAuth";
 import { useAgreement } from "../hooks/useAgreement";
 import {
-  markAgreementCompleted,
+  completeAgreementWithPartyBSignature,
   markPartyBReviewed,
   rejectAgreementByPartyB,
-  signPartyBAgreement,
 } from "../services/agreementService";
-import {
-  createCertificateIfMissing,
-  getCertificateByAgreementId,
-} from "../services/certificateService";
 import { generateHash } from "../services/security";
 import {
   buildSignedAgreementDocumentFromAgreement,
@@ -28,9 +23,11 @@ import {
 import {
   buildVerificationUrl,
   formatCertificateDate,
-  generateCertificateId,
+  generateCertificateIdForAgreement,
   getAgreementSha256,
 } from "../utils/certificate";
+
+const normalizeEmail = (email = "") => email.trim().toLowerCase();
 
 function AgreementInvitePage() {
   const { agreementId } = useParams();
@@ -64,9 +61,13 @@ function AgreementInvitePage() {
   }, [completionNotice, navigate]);
 
   const acceptAgreement = async () => {
+    if (actionLoading) {
+      return;
+    }
+
     try {
       setActionLoading(true);
-      await markPartyBReviewed(agreementId);
+      await markPartyBReviewed(agreementId, user?.email);
       await refetch();
     } catch (acceptError) {
       alert(acceptError.message);
@@ -76,9 +77,13 @@ function AgreementInvitePage() {
   };
 
   const rejectAgreement = async () => {
+    if (actionLoading) {
+      return;
+    }
+
     try {
       setActionLoading(true);
-      await rejectAgreementByPartyB(agreementId);
+      await rejectAgreementByPartyB(agreementId, user?.email);
       await refetch();
     } catch (rejectError) {
       alert(rejectError.message);
@@ -117,22 +122,17 @@ function AgreementInvitePage() {
         partyBSignature,
       });
       const securityHash = generateHash(finalSignedDocument);
-      const existingCertificate = agreement.certificateId
-        ? { certificateId: agreement.certificateId }
-        : await getCertificateByAgreementId(agreement.agreementId);
       const certificateId =
         agreement.certificateId ||
-        existingCertificate?.certificateId ||
-        generateCertificateId();
+        generateCertificateIdForAgreement(agreement.agreementId);
       const verificationUrl = buildVerificationUrl(window.location.origin, certificateId);
 
-      await signPartyBAgreement({
+      const completion = await completeAgreementWithPartyBSignature({
         agreementId,
+        userEmail: user?.email,
         signature: partyBSignature,
         securityHash,
-      });
-
-      const certificate = await createCertificateIfMissing(certificateId, {
+        certificateData: {
           certificateId,
           agreementId: agreement.agreementId,
           partyA: agreement.partyA,
@@ -142,18 +142,13 @@ function AgreementInvitePage() {
           sha256: securityHash,
           status: "Verified",
           verificationUrl,
-        });
-
-      await markAgreementCompleted({
-        agreementId,
-        certificateId: certificate.certificateId,
-        securityHash,
+        },
       });
 
       setCompletionNotice({
-        certificateId: certificate.certificateId,
+        certificateId: completion.certificateId,
         agreementId: agreement.agreementId,
-        sha256: securityHash,
+        sha256: completion.securityHash || securityHash,
       });
       await refetch();
     } catch (completeError) {
@@ -239,6 +234,26 @@ function AgreementInvitePage() {
     );
   }
 
+  if (error === "Access denied.") {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] px-4 py-8">
+        <Card className="mx-auto max-w-3xl p-8 text-center">
+          <StatusBadge variant="danger">Access Denied</StatusBadge>
+          <h1 className="mt-4 text-2xl font-bold text-slate-950">
+            You do not have access to this invitation
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            This agreement can only be opened by Party A or the invited Party B
+            account.
+          </p>
+          <Button onClick={() => navigate(user ? "/dashboard" : "/")} variant="secondary" className="mt-6">
+            Back to Home
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   if (error || !agreement) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] px-4 py-8">
@@ -250,7 +265,7 @@ function AgreementInvitePage() {
           <p className="mt-2 text-sm text-slate-500">
             We could not find this DigiStamp agreement invitation.
           </p>
-          <Button onClick={() => navigate("/")} variant="secondary" className="mt-6">
+          <Button onClick={() => navigate(user ? "/dashboard" : "/")} variant="secondary" className="mt-6">
             Back to Home
           </Button>
         </Card>
@@ -262,16 +277,46 @@ function AgreementInvitePage() {
     agreement.agreementStatus === AGREEMENT_STATUS.COMPLETED ||
     agreement.agreementStatus === AGREEMENT_STATUS.LEGACY_COMPLETED;
   const isRejected = agreement.agreementStatus === AGREEMENT_STATUS.REJECTED;
+  const currentEmail = normalizeEmail(user?.email);
+  const partyBEmail = normalizeEmail(agreement.partyBEmail);
+  const createdByEmail = normalizeEmail(agreement.createdByEmail);
+  const isPartyB = Boolean(partyBEmail && currentEmail === partyBEmail);
+  const isPartyA = Boolean(
+    currentEmail && currentEmail === createdByEmail,
+  ) || Boolean(user?.uid && agreement.createdBy === user.uid);
+  const hasAgreementAccess = isPartyA || isPartyB;
   const canReview =
+    isPartyB &&
     agreement.partyBStatus === PARTY_STATUS.PENDING &&
     !isCompleted &&
     !isRejected;
   const canSign =
+    isPartyB &&
     agreement.partyBStatus === PARTY_STATUS.REVIEWED &&
     agreement.partyAStatus === PARTY_STATUS.SIGNED &&
     !isCompleted &&
     !isRejected;
   const certificateId = completionNotice?.certificateId || agreement.certificateId;
+
+  if (!hasAgreementAccess) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] px-4 py-8">
+        <Card className="mx-auto max-w-3xl p-8 text-center">
+          <StatusBadge variant="danger">Access Denied</StatusBadge>
+          <h1 className="mt-4 text-2xl font-bold text-slate-950">
+            This invitation belongs to another account
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Sign in with the Party B email assigned to this agreement, or return
+            to your dashboard.
+          </p>
+          <Button onClick={() => navigate("/dashboard")} variant="secondary" className="mt-6">
+            Back to Dashboard
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 sm:px-6 lg:px-8">
@@ -332,7 +377,9 @@ function AgreementInvitePage() {
                 Party Controls
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Party B may only update their own review and signature fields.
+                {isPartyB
+                  ? "Party B may only update their own review and signature fields."
+                  : "Party A can monitor this agreement, but only Party B can accept, reject, or sign."}
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 {canReview && (
