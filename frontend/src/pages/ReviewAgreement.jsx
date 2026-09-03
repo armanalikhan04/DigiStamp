@@ -6,12 +6,22 @@ import Card from "../components/ui/Card";
 import ProgressSteps from "../components/ui/ProgressSteps";
 import SectionHeader from "../components/ui/SectionHeader";
 import StatusBadge from "../components/ui/StatusBadge";
+import { analyzeAgreementRisk } from "../services/gemini";
+
+const severityVariant = {
+  LOW: "success",
+  MEDIUM: "warning",
+  HIGH: "danger",
+};
 
 function ReviewAgreement() {
   const navigate = useNavigate();
   const location = useLocation();
   const reviewData = location.state || {};
   const [isReviewed, setIsReviewed] = useState(false);
+  const [riskAnalysis, setRiskAnalysis] = useState(null);
+  const [riskLoading, setRiskLoading] = useState(false);
+  const [riskError, setRiskError] = useState("");
 
   const creationDate = useMemo(() => {
     if (reviewData.createdAt) {
@@ -47,6 +57,29 @@ function ReviewAgreement() {
         agreementStatus: "Ready for Party A Signature",
       },
     });
+  };
+
+  const handleAnalyzeRisk = async () => {
+    if (!reviewData.aiText?.trim()) {
+      setRiskError("Generate an agreement before running AI risk analysis.");
+      setRiskAnalysis(null);
+      return;
+    }
+
+    try {
+      setRiskLoading(true);
+      setRiskError("");
+
+      const analysis = await analyzeAgreementRisk(reviewData.aiText);
+      setRiskAnalysis(analysis);
+    } catch {
+      setRiskAnalysis(null);
+      setRiskError(
+        "AI risk analysis is temporarily unavailable. You can continue reviewing and signing the agreement.",
+      );
+    } finally {
+      setRiskLoading(false);
+    }
   };
 
   if (!hasReviewData) {
@@ -176,6 +209,106 @@ function ReviewAgreement() {
                   )}
                 </div>
               </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-950">
+                    AI Agreement Check
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Identify important missing or ambiguous terms before signing.
+                    This is not professional legal advice.
+                  </p>
+                </div>
+                {riskAnalysis && (
+                  <StatusBadge variant={severityVariant[riskAnalysis.riskLevel]}>
+                    {riskAnalysis.riskLevel} Risk
+                  </StatusBadge>
+                )}
+              </div>
+
+              <Button
+                onClick={handleAnalyzeRisk}
+                disabled={riskLoading}
+                variant="secondary"
+                className="mt-5 w-full"
+              >
+                {riskLoading ? "Checking Agreement..." : "Analyze Agreement"}
+              </Button>
+
+              {riskError && (
+                <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-700">
+                  {riskError}
+                </div>
+              )}
+
+              {riskAnalysis && (
+                <div className="mt-5 space-y-5">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Summary
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">
+                      {riskAnalysis.summary}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                      Potential Issues
+                    </h3>
+                    <div className="mt-3 space-y-3">
+                      {riskAnalysis.risks.length > 0 ? (
+                        riskAnalysis.risks.map((risk) => (
+                          <div
+                            key={`${risk.title}-${risk.severity}`}
+                            className="rounded-2xl border border-slate-200 bg-white p-4"
+                          >
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <h4 className="text-sm font-bold text-slate-950">
+                                {risk.title}
+                              </h4>
+                              <StatusBadge variant={severityVariant[risk.severity]}>
+                                {risk.severity}
+                              </StatusBadge>
+                            </div>
+                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                              {risk.description}
+                            </p>
+                            <p className="mt-2 text-sm font-semibold leading-6 text-[#1E3A8A]">
+                              Recommendation: {risk.recommendation}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
+                          No major issues were returned by the AI agreement check.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {riskAnalysis.recommendations.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                        Recommendations
+                      </h3>
+                      <ul className="mt-3 space-y-2">
+                        {riskAnalysis.recommendations.map((recommendation) => (
+                          <li
+                            key={recommendation}
+                            className="rounded-2xl bg-blue-50 p-3 text-sm font-semibold leading-6 text-[#1E3A8A]"
+                          >
+                            {recommendation}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
           </div>
 
